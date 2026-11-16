@@ -12,6 +12,7 @@ import { wilson, isNoise } from "../lib/evolve/stats.js";
 import { buildCandidates, applyCandidate, stateChars } from "../lib/evolve/transforms.js";
 import { createStore, sha256 } from "../lib/evolve/store.js";
 import { createEvolve, cadenceDelay } from "../lib/evolve/engine.js";
+import { createRunner } from "../lib/evolve/runner.js";
 import { replayChain, setActiveChain, getActiveChain, renderHead, coerceEvolve } from "../lib/index.js";
 
 const tmp = () => mkdtempSync(join(tmpdir(), "point-evolve-"));
@@ -235,4 +236,37 @@ test("the cadence gate only waits for the remainder of the hour", () => {
   assert.equal(cadenceDelay({ lastAt: now - hour, intervalMs: hour, now }), 0, "an hour later it may run again");
   assert.equal(cadenceDelay({ lastAt: now - 2 * hour, intervalMs: hour, now }), 0);
   assert.equal(cadenceDelay({ lastAt: now - 60000, intervalMs: 0, now }), 0, "zero means no cadence");
+});
+
+test("the probe runner sends content blocks and surfaces a terminal error chunk", async () => {
+  const seen = [];
+  const llm = {
+    stream(request) {
+      seen.push(request);
+      return (async function* () {
+        yield { type: "text-delta", index: 0, text: "x".repeat(450) };
+        yield { type: "finish", reason: { kind: "stop" } };
+      })();
+    },
+  };
+  const runner = createRunner({ getLlm: () => llm, getSelection: () => ({ provider: "p", model: "m" }) });
+  const target = { id: "t", text: "do the thing" };
+  const result = await runner.run({ level: PROBES[0], target });
+  assert.equal(seen.length, 1);
+  assert.deepEqual(seen[0].messages[0].content, [{ type: "text", text: "do the thing" }],
+    "the runtime projects content blocks, so a bare string throws inside the adapter");
+  assert.equal(result.error, undefined);
+  assert.equal(result.ok, 1, "a 450-character plain answer passes the structure check");
+
+  const failing = createRunner({
+    getLlm: () => ({
+      stream: () => (async function* () {
+        yield { type: "finish", reason: { kind: "error", failure: { code: "UNKNOWN", message: "boom" } } };
+      })(),
+    }),
+    getSelection: () => ({ provider: "p", model: "m" }),
+  });
+  const broken = await failing.run({ level: PROBES[0], target });
+  assert.equal(broken.ok, 0);
+  assert.match(broken.error, /UNKNOWN: boom/, "a finish(error) chunk is a failure, not an empty answer");
 });

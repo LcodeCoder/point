@@ -235,7 +235,8 @@ research/round-N.md  该轮检索到的参考项目
 curl -s http://127.0.0.1:PORT/point/state | jq .evolve     # 只读快照
 curl -s -X POST http://127.0.0.1:PORT/point/evolve \
      -H 'content-type: application/json' -d '{"action":"round"}'
-# action: start | stop | round | rollback | publish | arm | disarm | toggle
+# action: start | stop | round | rollback | publish | arm | disarm | toggle | reset | probe
+# probe 是诊断：跑一次真实请求并回原文与错误，例 {"action":"probe","level":"p0"}
 ```
 
 跑一轮要几分钟，POST 只回执，进度看面板或 `ledger.jsonl`。
