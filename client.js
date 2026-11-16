@@ -512,7 +512,9 @@ window.__ModuleLoader__.load({
           h(Row, { label: '状态目录', value: ev.dir || '—' }),
           h(Row, {
             label: 'git',
-            value: ev.git && ev.git.ok ? '就绪' : (ev.git && ev.git.error) || '未初始化',
+            value: ev.git && ev.git.ok
+              ? `${ev.git.branch || 'main'} @ ${ev.git.commit || '—'}${ev.git.dirty ? ` · ${ev.git.dirty} 未提交` : ''}`
+              : (ev.git && ev.git.error) || '未初始化',
             tone: ev.git && ev.git.ok ? 'ok' : 'warn',
           })),
         last ? h('div', { className: 'ptp-list' },
