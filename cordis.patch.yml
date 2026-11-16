@@ -60,7 +60,6 @@
           sealedN: 0
           normalN: 0
           dir: ""                # empty = $DSH_HOME/point/evolve
-          intervalMs: 0
 
     # 破甲模式 - the mode that turns the protocol on.
     #
