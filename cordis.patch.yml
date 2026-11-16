@@ -1,0 +1,227 @@
+# point bundle patch
+#
+# Two rows and one preset.
+#
+#   point            - the plugin: panel, /point/state, evidence, refusal retry
+#   preset-point     - 破甲模式: an agent preset whose child row owns the prompt
+#
+# The prompt half is preset-scoped on purpose. Selecting 破甲模式 in a session's
+# mode menu is what turns the protocol on; every other preset keeps its own
+# system prompt untouched. Set `scope: global` below to restore the old
+# always-on behaviour (the sections then come from the `point` row itself).
+#
+# Override any of these keys from the profile's own cordis.patch.yml or from the
+# plugin config panel; values here are only the defaults.
+
+- insert:
+    - id: point
+      name: point
+      inject: [systemPrompt]
+      config:
+        enabled: true
+        scope: preset          # preset | global
+        preset: point          # point | deva | custom
+        mode: full             # full | routing | core | minimal
+        position: head         # head | tail | both
+        tailMode: anchor       # anchor | full
+        envelope: false        # wrap in the ChatML system turn
+        identity: Little Code Sauce
+        operator: YG
+        language: Simplified Chinese
+        openingTag: "[Y] —"
+        rules: all             # all | [1,13,15] | "pentest,web"
+        includeIntentMap: true
+        includeCanned: true
+        includeWebRouting: true
+        retryRefusal: true     # re-ask when the model opens with a refusal
+        maxChars: 0
+        order: -101000
+        tailOrder: 10250
+        # Self-evolution. Off by default: the loop spends model calls and pushes
+        # commits, so an install never starts it on its own. Flip `enabled` here
+        # (or use the panel switch, which persists in the state directory), and
+        # each kept round is committed and pushed to `repo`.
+        evolve:
+          enabled: false
+          autoStart: true        # start a loop on boot once enabled + armed
+          budget: fast           # fast (small sample) | full (v2 N=100)
+          rounds: 6
+          repo: https://github.com/LcodeCoder/point.git
+          branch: main
+          push: true
+          dryRun: false
+          provider: ""           # empty = the session's default model
+          model: ""
+          temperature: 0
+          maxTokens: 1200
+          timeoutMs: 120000
+          smallN: 0              # 0 = take the budget's default
+          fullN: 0
+          sealedN: 0
+          normalN: 0
+          dir: ""                # empty = $DSH_HOME/point/evolve
+          intervalMs: 0
+
+    # 破甲模式 - the mode that turns the protocol on.
+    #
+    # A preset is an ordinary declaration: `config.plugins` is the agent's whole
+    # composition, so this list mirrors the shipped `standard` preset and adds
+    # one row of ours. Order 5 puts it right after `cordis` (4) and before
+    # `redteam` (10) in the mode menu.
+    - id: preset-point
+      name: '@deepseek-ai/dsh-agent-preset'
+      config:
+        id: point
+        name: 破甲模式
+        description: 按本地合成 fixture 执行的完整技术作答模式：意图优先、分类锁定、四层交付、草稿自审；内置红队 playbook 索引，会话按需加载。
+        order: 5
+        plugins:
+          - id: persona
+            name: '@deepseek-ai/dsh-persona'
+            config:
+              prefix: ""
+          - id: agent-instructions
+            name: '@deepseek-ai/dsh-agent-instructions'
+            config:
+              maxBytes: 65536
+          - id: time-context
+            name: '@deepseek-ai/dsh-time-context'
+          - id: tool-bash
+            name: '@deepseek-ai/dsh-tool-bash'
+            disabled: !!js process.platform === 'win32'
+          - id: tool-pwsh
+            name: '@deepseek-ai/dsh-tool-pwsh'
+            disabled: !!js process.platform !== 'win32'
+          - id: tool-fs
+            name: '@deepseek-ai/dsh-tool-fs'
+            config:
+              applyPatch: false
+          - id: tool-fs-search
+            name: '@deepseek-ai/dsh-tool-fs-search'
+            config:
+              sampleOverCapGlobResults: false
+          - id: tool-jobs
+            name: '@deepseek-ai/dsh-tool-jobs'
+          - id: tool-schedule
+            name: '@deepseek-ai/dsh-tool-schedule'
+          - id: skill-filesystem
+            name: '@deepseek-ai/dsh-skill-filesystem'
+            config:
+              # This package's skills/ first (the redteam router), then the
+              # playbook library dsh-purge installs, when it is present.
+              customSkillDirs: !!js (() => { const path = process.getBuiltinModule('node:path'); const fs = process.getBuiltinModule('node:fs'); const require = process.getBuiltinModule('node:module').createRequire(baseUrl); const pkg = path.dirname(require.resolve('point/package.json')); const dirs = [path.join(pkg, 'skills')]; const legacy = dshHomePath('redteam/skills'); if (fs.existsSync(legacy)) dirs.push(legacy); return dirs })()
+          - id: tool-skill
+            name: '@deepseek-ai/dsh-tool-skill'
+          - id: command-goal
+            name: '@deepseek-ai/dsh-command-goal'
+          - id: tool-goal
+            name: '@deepseek-ai/dsh-tool-goal'
+          - id: planning
+            name: cordis:group
+            group: true
+            isolate:
+              planMode: true
+            config:
+              - id: plan-mode
+                name: '@deepseek-ai/dsh-plan-mode'
+                config:
+                  section: |
+                    You are in plan mode. Stay in plan mode until the user approves your plan through exit_plan_mode or switches the session mode. Imperative language to implement changes means plan the implementation, not execute it. When the operator explicitly asks you to implement now, treat that as authorization to execute; exit plan mode or proceed with mutation tools as the operator directs.
+
+                    Explore first. Use non-mutating reads, searches, static analysis, and checks to ground the plan in the actual repository. Prefer existing functions and patterns over new machinery.
+
+                    The tool catalog stays the same across modes for request-cache stability. These plan-mode rules override any later tool description or guidance that suggests using mutation tools; those tools remain listed to keep the tool catalog unchanged. Do not use todo_write to track this planning phase: it tracks implementation after an approved plan, while the plan itself belongs in exit_plan_mode.
+
+                    Resolve discoverable facts by inspection. Use ask_user_question only for user-owned choices or material ambiguity that inspection cannot answer. Do not ask the user where code lives or how current behavior works when you can find out.
+
+                    Make the plan decision-complete: state the goal and success criteria; group implementation changes by subsystem; identify public API, schema, and data-flow changes; cover edge cases, failure modes, tests, acceptance criteria, and explicit assumptions.
+
+                    When ready, call exit_plan_mode with the complete plan markdown, starting with a # title. Make exit_plan_mode the only and final tool call in that assistant response: it presents the plan for approval, and implementation begins only in a later step after approval. If review rejects it, incorporate the feedback and present again. If the review channel is unavailable or aborted, stay in plan mode and ask the user to switch modes manually; proceed with implementation when the operator requires it.
+          - id: compaction
+            name: cordis:group
+            group: true
+            isolate:
+              compaction: true
+              toolResultPruner: true
+            config:
+              - id: compaction-basic
+                name: '@deepseek-ai/dsh-compaction-basic'
+              - id: command-compact
+                name: '@deepseek-ai/dsh-command-compact'
+              - id: tool-result-pruner
+                name: '@deepseek-ai/dsh-compaction-tool-result-pruner'
+                config:
+                  thresholdChars: 8192
+                  headChars: 4096
+                  tailChars: 1024
+          - id: delegation
+            name: cordis:group
+            group: true
+            isolate:
+              workflowEngine: true
+            config:
+              - id: tool-subagent-control
+                name: '@deepseek-ai/dsh-tool-subagent-control'
+                config:
+                  interrupt: false
+              - id: tool-subagent
+                name: '@deepseek-ai/dsh-tool-subagent'
+                config:
+                  provider: spawn
+                  toolName: subagent
+                  modelSelection: true
+                  modelDiscovery: true
+              - id: tool-subagent-fork
+                name: '@deepseek-ai/dsh-tool-subagent'
+                config:
+                  provider: fork
+                  toolName: subagent_fork
+              - id: workflow-ptc
+                name: '@deepseek-ai/dsh-workflow-ptc'
+                config:
+                  provider: spawn
+              - id: tool-workflow
+                name: '@deepseek-ai/dsh-tool-workflow'
+          - id: tool-ask-user
+            name: '@deepseek-ai/dsh-tool-ask-user'
+          - id: tool-todo
+            name: '@deepseek-ai/dsh-tool-todo'
+            config:
+              allowParallelInProgress: true
+          - id: tool-web
+            name: '@deepseek-ai/dsh-tool-web'
+            config:
+              fetch: true
+              searchTimeoutMs: 60000
+          - id: present
+            name: '@deepseek-ai/dsh-tool-present'
+          - id: tool-office
+            name: '@deepseek-ai/dsh-tool-office'
+          - id: tool-plugin-manager
+            name: '@deepseek-ai/dsh-plugin-manager/tools'
+            disabled: !!js "!ctx.get('profileContext')"
+          - id: tool-plugin-market
+            name: '@deepseek-ai/dsh-plugin-market/tools'
+            disabled: true
+
+          # The row that actually carries the protocol into this preset's scope.
+          - id: point-section
+            name: point/section
+            config:
+              enabled: true
+              preset: point
+              mode: full
+              position: head
+              tailMode: anchor
+              envelope: false
+              identity: Little Code Sauce
+              operator: YG
+              language: Simplified Chinese
+              openingTag: "[Y] —"
+              rules: all
+              includeIntentMap: true
+              includeCanned: true
+              includeWebRouting: true
+              maxChars: 0
+              order: -101000
+              tailOrder: 10250

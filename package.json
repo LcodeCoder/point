@@ -1,0 +1,54 @@
+{
+  "name": "point",
+  "version": "0.2.0",
+  "description": "DeepSeek Harness plugin: the armor-break protocol abstracted from Deva 0.1.15 - identity kernel, scope axiom, draft-defect review loop, category lock, routing tables, output contract.",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./client.js",
+    "./protocol": "./lib/protocol.js",
+    "./method": "./lib/method.js",
+    "./envelope": "./lib/envelope.js",
+    "./package.json": "./package.json",
+    "./section": "./lib/section.js",
+    "./refusal": "./lib/refusal.js"
+  },
+  "bin": {
+    "point": "lib/cli.js"
+  },
+  "files": [
+    "lib",
+    "prompts",
+    "client.js",
+    "cordis.patch.yml",
+    "README.md",
+    "METHOD.md",
+    "LICENSE",
+    "skills"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true
+    }
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test \"test/*.test.mjs\"",
+    "render": "node lib/cli.js render"
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "system-prompt",
+    "protocol"
+  ],
+  "license": "MIT"
+}
