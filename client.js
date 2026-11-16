@@ -485,7 +485,7 @@ window.__ModuleLoader__.load({
         h('div', { className: 'ptp-note' },
           ev.phase === 'done'
             ? `本轮预算（${ev.maxRounds} 轮）已用完，链保留；点「开启」开始新一轮，台账会归档。`
-            : '每轮：定层 → 金丝雀 → 选该层一个算子 → 8 个候选 → 小样本 → 全量 → 密封 → keep/revert。轮与轮之间没有等待，跑完一轮立刻进下一轮。'),
+            : '每轮：定层 → 金丝雀 → 选该层一个算子 → 8 个候选 → 小样本 → 全量 → 密封 → keep/revert。跑完一轮后按节奏等下一轮，同时要等你静默。'),
         h('div', { className: 'ptp-actions' },
           h('button', {
             className: 'ptp-btn ptp-primary', type: 'button', disabled: !!busy,
@@ -508,6 +508,12 @@ window.__ModuleLoader__.load({
             label: '配置默认',
             value: ev.configured ? '开' : '关（会话内可开）',
             tone: ev.configured ? 'ok' : null,
+          }),
+          h(Row, {
+            label: '节奏',
+            value: ev.everyMinutes
+              ? `每 ${ev.everyMinutes >= 60 ? `${Math.round(ev.everyMinutes / 60)} 小时` : `${ev.everyMinutes} 分钟`}最多一轮${ev.nextAt ? ` · 下次 ${clock(ev.nextAt)}` : ''}`
+              : '不限间隔',
           }),
           h(Row, {
             label: '空闲才跑',

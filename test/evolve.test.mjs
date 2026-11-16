@@ -11,7 +11,7 @@ import { attribute, judgeCanary, guardReport, THRESHOLDS, PROBES, OPERATORS } fr
 import { wilson, isNoise } from "../lib/evolve/stats.js";
 import { buildCandidates, applyCandidate, stateChars } from "../lib/evolve/transforms.js";
 import { createStore, sha256 } from "../lib/evolve/store.js";
-import { createEvolve } from "../lib/evolve/engine.js";
+import { createEvolve, cadenceDelay } from "../lib/evolve/engine.js";
 import { replayChain, setActiveChain, getActiveChain, renderHead, coerceEvolve } from "../lib/index.js";
 
 const tmp = () => mkdtempSync(join(tmpdir(), "point-evolve-"));
@@ -223,4 +223,16 @@ test("the evolve config normalizes YAML strings and clamps the round budget", ()
   assert.equal(cfg.idleOnly, true, "the loop yields to the operator by default");
   assert.equal(cfg.idleMs, 600000, "ten quiet minutes before a round starts");
   assert.equal(coerceEvolve({ idleMs: "99999999" }).idleMs, 3600000, "the quiet window is capped at an hour");
+  assert.equal(coerceEvolve({}).everyMinutes, 60, "one round per hour by default");
+  assert.equal(coerceEvolve({ everyMinutes: "9999" }).everyMinutes, 1440, "the cadence is capped at a day");
+});
+
+test("the cadence gate only waits for the remainder of the hour", () => {
+  const now = Date.UTC(2026, 0, 1, 12, 0, 0);
+  const hour = 3600000;
+  assert.equal(cadenceDelay({ lastAt: 0, intervalMs: hour, now }), 0, "the first round is not delayed");
+  assert.equal(cadenceDelay({ lastAt: now - 60000, intervalMs: hour, now }), hour - 60000);
+  assert.equal(cadenceDelay({ lastAt: now - hour, intervalMs: hour, now }), 0, "an hour later it may run again");
+  assert.equal(cadenceDelay({ lastAt: now - 2 * hour, intervalMs: hour, now }), 0);
+  assert.equal(cadenceDelay({ lastAt: now - 60000, intervalMs: 0, now }), 0, "zero means no cadence");
 });
