@@ -176,7 +176,7 @@ point, deployment:persona-prefix, deployment:persona-suffix, point:tail
 | 轨道 | 改什么 | 怎么判 |
 | --- | --- | --- |
 | `prompt` | 注入的协议文本（A/M/T 算子） | 五级探针 + 分层破甲率 + 守门 |
-| `code` | 包里的文件：`lib/`、`client.js`、`skills/`、`scripts/`、`README.md`、`docs/*.md` | 沙盒副本跑全套测试，通过才落地 |
+| `code` | 包里的文件：`lib/`、`client.js`、`skills/`、`scripts/`、`README.md`、`docs/*.md` | 沙盒副本跑全套测试、不丢既有 export，通过才落地 |
 
 代码轮不是「让模型随便改自己的代码」，它有四道闸：
 
