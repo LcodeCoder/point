@@ -19,7 +19,7 @@ point/
 ├── client.js         浏览器半：侧栏 tab + 面板 + /point 命令（手写，无构建）
 ├── prompts/deva.txt  Deva 原文（结构保留，身份与称谓已归一为 pointer / 大人，用于对照与 deva 预设）
 ├── skills/redteam/   红队路由器技能（recon → 入口 → 隧道 → 横向 → 证据）
-├── test/             83 个测试，含真实 SystemPrompt 服务的挂载集成测试
+├── test/             84 个测试，含真实 SystemPrompt 服务的挂载集成测试
 ├── cordis.patch.yml  两行：point 常驻 + 破甲模式预设
 └── METHOD.md         逆向记录：九层机制、行号索引、抽象映射
 ```
@@ -312,7 +312,7 @@ printf '\n# reload\n' >> ~/.dsh/profiles/desktop/cordis.patch.yml
 node --test "test/*.test.mjs"
 ```
 
-83 项：分段完整性、模式单调递增、规则过滤（含意图表同步）、`maxChars` 裁剪、身份参数化、违禁词自检、信封往返、`apply` 的四种注册路径，用真实 `@deepseek-ai/dsh-system-prompt` 服务挂载后组装提示词的集成测试（找不到 dsh 应用时自动跳过，可用 `DSH_APP_ROOT` 指路），`enabled: false` 下的状态路由与 405/HEAD 分支、`client.js` 的假 React 渲染测试（五个页签、错误分支、`/point` 命令选中面板）与 `clientSnapshot` 的图行诊断；`scope: preset` 下不注入段、预设探针的注册/缺失/抛错三态、`llm/stream` 的标记闸门、`point/section` 行在真实服务上的注入；自进化侧的分层判读表、金丝雀、守门、Wilson 区间、8 候选与空变体、变换链回放、store 的提交/回滚/patch、一轮完整 keep 与无模型时 blocked、配置归一化；代码轮侧的研究缓存与失败降级、JSON 提取、路径白名单（`test/`、`package.json`、`..` 全拒）、沙盒在副本里跑测试与语法检查、代码轮 keep/revert、回滚备份往返、revert 也推进轮次。
+84 项：分段完整性、模式单调递增、规则过滤（含意图表同步）、`maxChars` 裁剪、身份参数化、违禁词自检、信封往返、`apply` 的四种注册路径，用真实 `@deepseek-ai/dsh-system-prompt` 服务挂载后组装提示词的集成测试（找不到 dsh 应用时自动跳过，可用 `DSH_APP_ROOT` 指路），`enabled: false` 下的状态路由与 405/HEAD 分支、`client.js` 的假 React 渲染测试（五个页签、错误分支、`/point` 命令选中面板）与 `clientSnapshot` 的图行诊断；`scope: preset` 下不注入段、预设探针的注册/缺失/抛错三态、`llm/stream` 的标记闸门、`point/section` 行在真实服务上的注入；自进化侧的分层判读表、金丝雀、守门、Wilson 区间、8 候选与空变体、变换链回放、store 的提交/回滚/patch、一轮完整 keep 与无模型时 blocked、配置归一化；代码轮侧的研究缓存与失败降级、JSON 提取、路径白名单（`test/`、`package.json`、`..` 全拒）、沙盒在副本里跑测试与语法检查、代码轮 keep/revert、回滚备份往返、revert 也推进轮次。
 
 ## 回滚
 

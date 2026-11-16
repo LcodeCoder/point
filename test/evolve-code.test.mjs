@@ -9,6 +9,7 @@ import { createProposer, extractJson, validateProposal } from "../lib/evolve/pro
 import { createResearch } from "../lib/evolve/research.js";
 import { verifyChange } from "../lib/evolve/sandbox.js";
 import { createStore } from "../lib/evolve/store.js";
+import { createPublisher } from "../lib/evolve/publish.js";
 
 const workspace = join(import.meta.dirname, "..");
 
@@ -185,6 +186,18 @@ test("a revert round still advances the round counter", async () => {
   await engine.runRound();
   assert.equal(calls, 2);
   assert.equal(store.active().round, 2);
+});
+
+test("a code round's commit message names the change and the tests", async () => {
+  const publisher = createPublisher({ dir: mkdtempSync(join(tmpdir(), "point-pub-")), dryRun: true, push: false });
+  const result = await publisher.publishRound({
+    round: 2,
+    track: "code",
+    title: "add retry helper",
+    decision: "keep",
+    tests: { pass: 84, fail: 0, ok: true },
+  });
+  assert.match(result.message, /evolve round 2: add retry helper keep \(84 tests\)/);
 });
 
 test("without a proposer the code track falls back to the prompt track", async () => {
