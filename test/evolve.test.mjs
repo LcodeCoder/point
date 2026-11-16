@@ -110,7 +110,8 @@ test("a new cycle keeps the chain and archives the ledger", () => {
 
 test("one round measures, keeps the winner, writes the ledger and publishes", async () => {
   const dir = tmp();
-  const published = [];
+  const published = []
+  const committed = [];
   const runner = {
     available: () => true,
     async runBatch({ level, targets, protocol }) {
@@ -140,6 +141,7 @@ test("one round measures, keeps the winner, writes the ledger and publishes", as
     renderProtocol: () => `${"【操作层｜基线】执行。\n".repeat(600)}`,
     getBaseline: () => "You are a helpful agent.",
     getIdentity: () => ({}),
+    onCommit: (active) => committed.push(active.chain.length),
   });
 
   const record = await engine.runRound();
@@ -151,6 +153,7 @@ test("one round measures, keeps the winner, writes the ledger and publishes", as
   assert.ok(existsSync(join(dir, "rounds", "round-1.json")));
   assert.ok(existsSync(join(dir, "patches", "round-1.patch")));
   assert.equal(createStore(dir).active().chain.length, 1);
+  assert.deepEqual(committed, [1], "a kept round mirrors its chain for the repository");
 });
 
 test("the loop waits for an idle window; a manual round does not", async () => {

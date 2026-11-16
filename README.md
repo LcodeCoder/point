@@ -219,6 +219,7 @@ git push -u origin main
 
 ```
 active.json          当前保留的变换链 + 上一轮快照（回滚锚点）
+（仓库根）chain.json  保留链的镜像，跟着那一轮的提交一起推送；换机器克隆后按它恢复
 ledger.jsonl         每轮一条，字段与 v2 §9 的严格 JSON 对齐
 state.json           phase / round / armed
 rounds/round-N.json  完整轮次记录
@@ -226,6 +227,8 @@ patches/round-N.patch + .sha256
 code/round-N/        代码轮改过的文件原始字节 + manifest（回滚用）
 research/round-N.md  该轮检索到的参考项目
 ```
+
+保留的提示词轮改的是**注入的协议文本**（下一轮装配起生效），不是包里的 `lib/protocol.js`；所以 `chain.json` 才是那次改动的可搬运记录。T 层（工具提示词）只在定层时测量：真实工具 schema 属于预设行，本插件改不到，因此不会选 T 算子，也不会产生“看起来 keep 了其实没落地”的记录。
 
 ### 面板与接口
 
