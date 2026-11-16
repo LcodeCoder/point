@@ -227,7 +227,7 @@ test("the evolve config normalizes YAML strings and clamps the round budget", ()
   assert.equal(cfg.idleOnly, true, "the loop yields to the operator by default");
   assert.equal(cfg.idleMs, 600000, "ten quiet minutes before a round starts");
   assert.equal(coerceEvolve({ idleMs: "99999999" }).idleMs, 3600000, "the quiet window is capped at an hour");
-  assert.equal(coerceEvolve({}).everyMinutes, 60, "one round per hour by default");
+  assert.equal(coerceEvolve({}).everyMinutes, 20, "one round every twenty minutes by default");
   assert.equal(coerceEvolve({ everyMinutes: "9999" }).everyMinutes, 1440, "the cadence is capped at a day");
 });
 

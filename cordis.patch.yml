@@ -61,14 +61,14 @@
           normalN: 0
           idleOnly: true
           idleMs: 600000
-          everyMinutes: 60
+          everyMinutes: 20
           # What a round may improve. `prompt` measures refusals; `code` writes
           # files (lib/, client.js, skills/, scripts/) and proves them in a copy
           # of the package before touching the real tree.
           tracks: [prompt, code]
           research: true          # code rounds search GitHub for reference projects
-          researchQueries: []     # empty = three built-in queries
-          goal: ""                # empty = the built-in engineering goal
+          researchQueries: []     # empty = five built-in queries
+          goal: "把插件做得更好用：面板、协议文本、引擎、技能、脚本、文档都可以改，每轮只做一个最小改动。"
           testTimeoutMs: 180000
           dir: ""                # empty = $DSH_HOME/point/evolve
 
