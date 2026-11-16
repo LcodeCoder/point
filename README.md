@@ -103,6 +103,10 @@ point, deployment:persona-prefix, deployment:persona-suffix, point:tail
       dryRun: false
       tracks: [prompt, code]   # 提示词轮测破甲率，代码轮写文件并跑测试
       research: true           # 代码轮先搜 GitHub 参考项目
+      everyMinutes: 20         # 每轮之间至少隔这么久；0 = 不停
+      continuous: true         # 6 轮跑完自动开新周期，整夜不停
+      idleOnly: true           # 只在会话静默时跑
+      idleMs: 600000           # 静默 10 分钟才算空闲
 ```
 
 ### 预设
@@ -198,7 +202,7 @@ point, deployment:persona-prefix, deployment:persona-suffix, point:tail
 7. **自检**：扫即将保留的全文（占位符 / persona 三针 / 信封配平 / 禁词），有 high 就 revert。
 8. **决定**：keep / revert / noise / stop / blocked。keep 才写进 `active.json`，下一轮从这里继续。
 
-同一层连续两轮 Δ<3pp 就换层；打错层两次强制停轮重跑定层；6 轮用完交台账。
+同一层连续两轮 Δ<3pp 就换层；打错层两次强制停轮重跑定层。6 轮是一周期：`continuous: true` 时周期结束自动归档台账、开下一周期（轮号从 1 重数，保留的链继续累积），所以整夜不用人管；设 `continuous: false` 则 6 轮后停在 `done`。
 
 ### 每轮自检
 

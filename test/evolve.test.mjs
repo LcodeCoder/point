@@ -157,6 +157,19 @@ test("one round measures, keeps the winner, writes the ledger and publishes", as
   assert.deepEqual(committed, [1], "a kept round mirrors its chain for the repository");
 });
 
+test("a finished cycle rolls into a fresh one when continuous is on", () => {
+  const store = createStore(tmp());
+  store.commit([{ axis: "A2", id: "c1" }], { round: 2, sha: "x" });
+  const engine = createEvolve({ config: { rounds: 2, continuous: true }, store, runner: { available: () => false } });
+  const step = engine.advanceRound();
+  assert.deepEqual(step, { round: 1, cycled: true, done: false });
+  assert.equal(store.active().round, 0, "the cycle restarts at round 1");
+  assert.equal(store.active().chain.length, 1, "the kept chain survives the cycle");
+
+  const finite = createEvolve({ config: { rounds: 2, continuous: false }, store: createStore(tmp()), runner: { available: () => false } });
+  assert.deepEqual(finite.advanceRound(), { round: 1, cycled: false, done: false });
+});
+
 test("the loop waits for an idle window; a manual round does not", async () => {
   const dir = tmp();
   const waits = [];

@@ -64,6 +64,7 @@
           idleOnly: true
           idleMs: 600000
           everyMinutes: 20
+          continuous: true
           # What a round may improve. `prompt` measures refusals; `code` writes
           # files (lib/, client.js, skills/, scripts/) and proves them in a copy
           # of the package before touching the real tree.
