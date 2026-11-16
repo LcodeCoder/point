@@ -62,6 +62,14 @@
           idleOnly: true
           idleMs: 600000
           everyMinutes: 60
+          # What a round may improve. `prompt` measures refusals; `code` writes
+          # files (lib/, client.js, skills/, scripts/) and proves them in a copy
+          # of the package before touching the real tree.
+          tracks: [prompt, code]
+          research: true          # code rounds search GitHub for reference projects
+          researchQueries: []     # empty = three built-in queries
+          goal: ""                # empty = the built-in engineering goal
+          testTimeoutMs: 180000
           dir: ""                # empty = $DSH_HOME/point/evolve
 
     # 破甲模式 - the mode that turns the protocol on.

@@ -463,6 +463,9 @@ window.__ModuleLoader__.load({
       return `${Math.round(value / 1000)} 秒`
     }
 
+    const trackLabel = (tracks) => (Array.isArray(tracks) && tracks.length ? tracks : ['prompt'])
+      .map((id) => (id === 'code' ? '代码' : '提示词')).join(' → ')
+
     function Evolve({ data, busy, onAction }) {
       const ev = data.evolve || { available: false, stale: true }
       if (!ev.available) {
@@ -481,11 +484,12 @@ window.__ModuleLoader__.load({
           h(Card, { label: '开关', value: ev.armed ? '已开启' : '已关闭' }),
           h(Card, { label: '轮次', value: `${ev.round}`, unit: `/ ${ev.maxRounds}` }),
           h(Card, { label: '阶段', value: ev.phase || 'idle' }),
+          h(Card, { label: '轨道', value: trackLabel(ev.tracks) }),
           h(Card, { label: '保留', value: `${ev.kept}`, unit: `/ ${ev.ledger} 轮` })),
         h('div', { className: 'ptp-note' },
           ev.phase === 'done'
             ? `本轮预算（${ev.maxRounds} 轮）已用完，链保留；点「开启」开始新一轮，台账会归档。`
-            : '每轮：定层 → 金丝雀 → 选该层一个算子 → 8 个候选 → 小样本 → 全量 → 密封 → keep/revert。跑完一轮后按节奏等下一轮，同时要等你静默。'),
+            : '提示词轮：定层 → 金丝雀 → 选算子 → 8 个候选 → 小样本 → 全量 → 密封。代码轮：GitHub 检索 → 写完整文件 → 沙盒副本跑全套测试 → 通过才落地。跑完一轮按节奏等下一轮，同时要等你静默。'),
         h('div', { className: 'ptp-actions' },
           h('button', {
             className: 'ptp-btn ptp-primary', type: 'button', disabled: !!busy,
@@ -516,6 +520,10 @@ window.__ModuleLoader__.load({
               : '不限间隔',
           }),
           h(Row, {
+            label: '轨道',
+            value: `${trackLabel(ev.tracks)}${ev.research === false ? ' · 不检索' : ' · 代码轮先检索 GitHub'}`,
+          }),
+          h(Row, {
             label: '空闲才跑',
             value: ev.idleOnly ? `是 · 静默 ${fmtIdle(ev.idleMs)}` : '否 · 一直跑',
             tone: ev.idleOnly ? 'ok' : 'warn',
@@ -543,7 +551,15 @@ window.__ModuleLoader__.load({
           })),
         last ? h('div', { className: 'ptp-list' },
           h(SectionTitle, { title: '上一轮' }),
-          h(Row, { label: `第 ${last.round} 轮`, value: last.decision || '—' }),
+          h(Row, { label: `第 ${last.round} 轮 · ${last.track === 'code' ? '代码' : '提示词'}`, value: last.decision || '—' }),
+          last.title ? h(Row, { label: '改动', value: last.title }) : null,
+          last.files && last.files.length ? h(Row, { label: '文件', value: last.files.map((file) => file.path).join('、') }) : null,
+          last.tests ? h(Row, {
+            label: '测试',
+            value: `${last.tests.pass || 0} 通过${last.tests.fail ? ` · ${last.tests.fail} 失败` : ''}`,
+            tone: last.tests.ok ? 'ok' : 'warn',
+          }) : null,
+          last.research ? h(Row, { label: '检索', value: `${last.research.hits || 0} 个参考项目` }) : null,
           h(Row, {
             label: '端到端',
             value: last.e2e ? `${pctOf(last.e2e.before)} → ${pctOf(last.e2e.after)}` : '—',
@@ -552,8 +568,10 @@ window.__ModuleLoader__.load({
           h(SectionTitle, { title: '台账', note: `${ev.history.length} 轮` }),
           ev.history.map((row) => h(Row, {
             key: `h${row.round}`,
-            label: `#${row.round} ${row.axis || '—'}`,
-            value: `${row.decision || '—'}${row.eval && row.eval.e2e ? ` · ${pctOf(row.eval.e2e.after)}` : ''}`,
+            label: `#${row.round} ${row.track === 'code' ? '代码' : (row.axis || '提示词')}`,
+            value: row.track === 'code'
+              ? `${row.decision || '—'}${row.title ? ` · ${row.title}` : ''}${row.tests ? ` · ${row.tests.pass || 0} 测试` : ''}`
+              : `${row.decision || '—'}${row.eval && row.eval.e2e ? ` · ${pctOf(row.eval.e2e.after)}` : ''}`,
             tone: row.decision === 'keep' ? 'ok' : row.decision === 'revert' ? 'warn' : null,
           }))) : null)
     }

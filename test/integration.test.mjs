@@ -85,6 +85,8 @@ test("the bundle patch ships the self-evolution switch, off by default", () => {
   const yaml = readFileSync(new URL("../cordis.patch.yml", import.meta.url), "utf8");
   const row = yaml.slice(yaml.indexOf("- id: point"));
   assert.match(row, /evolve:\n\s+enabled: false/);
+  assert.match(row, /tracks: \[prompt, code\]/);
+  assert.match(row, /research: true/);
   assert.match(row, /repo: https:\/\/github\.com\/LcodeCoder\/point\.git/);
   assert.match(row, /rounds: 6/);
   assert.match(row, /push: true/);

@@ -19,7 +19,7 @@ point/
 ├── client.js         浏览器半：侧栏 tab + 面板 + /point 命令（手写，无构建）
 ├── prompts/deva.txt  Deva 原文（结构保留，身份与称谓已归一为 pointer / 大人，用于对照与 deva 预设）
 ├── skills/redteam/   红队路由器技能（recon → 入口 → 隧道 → 横向 → 证据）
-├── test/             56 个测试，含真实 SystemPrompt 服务的挂载集成测试
+├── test/             83 个测试，含真实 SystemPrompt 服务的挂载集成测试
 ├── cordis.patch.yml  两行：point 常驻 + 破甲模式预设
 └── METHOD.md         逆向记录：九层机制、行号索引、抽象映射
 ```
@@ -101,6 +101,8 @@ point, deployment:persona-prefix, deployment:persona-suffix, point:tail
       branch: main
       push: true
       dryRun: false
+      tracks: [prompt, code]   # 提示词轮测破甲率，代码轮写文件并跑测试
+      research: true           # 代码轮先搜 GitHub 参考项目
 ```
 
 ### 预设
@@ -167,7 +169,25 @@ point, deployment:persona-prefix, deployment:persona-suffix, point:tail
 - **探针不被拒绝重试改写**：`purpose: "point-probe"` 的请求直接放行，否则测量会被自己的补丁污染。
 - **面板开销**：只有打开「自进化」页签时才每 4 秒拉一次快照，`git status` 同步读一次，几十毫秒。
 
-### 一轮做什么
+### 两条轨道
+
+`tracks` 决定一轮改什么，默认交替：第 1 轮提示词，第 2 轮代码，第 3 轮提示词……
+
+| 轨道 | 改什么 | 怎么判 |
+| --- | --- | --- |
+| `prompt` | 注入的协议文本（A/M/T 算子） | 五级探针 + 分层破甲率 + 守门 |
+| `code` | 包里的文件：`lib/`、`client.js`、`skills/`、`scripts/`、`README.md`、`docs/*.md` | 沙盒副本跑全套测试，通过才落地 |
+
+代码轮不是「让模型随便改自己的代码」，它有四道闸：
+
+1. **只收完整文件**，不收 diff。模型返回 `{title, rationale, files:[{path, content}]}`；路径必须落在白名单，`test/`、`package.json`、`cordis.patch.yml` 一律拒绝，单文件 ≤120KB、≤3 个文件。
+2. **先搜再写**：`research: true` 时先用 GitHub 搜索 API 找参考项目（每轮最多 4 条查询、5 个结果），把「名字 / star / 一句话 / topics」拼进提示词，笔记存 `research/`。参考的是思路，不是代码。
+3. **沙盒验证**：整包复制到临时目录，写入候选文件，`node --check` 每个改动的脚本，再跑全套 `node --test`；测试数不能比基线少。失败就 revert，真树一个字节都没动。
+4. **可回滚**：keep 之前把每个被改文件的原始字节备份到 `code/round-N/`，面板「回滚上一轮」直接还原；这一轮同时进台账、写 patch、提交并推送。
+
+前端优化走同一条路：`client.js` 在白名单里，模型改完同样要过测试，面板刷新即可看到。代码轮不碰 `test/`，所以不能靠删测试过关；也不碰 `package.json`，不能偷偷加依赖。
+
+### 提示词轮做什么
 
 1. **定层**：同一请求跑五级探针 P0 裸 API（无 system/无工具）、P1 加最小 system、P2 agent 默认态、P3 注入态、P4 工具路径。P0 挂 → 模型甲（命中网关特征 → 外审，直接停，不写补丁）；P0 过 P2 挂 → agent 甲；P2 过 P3 挂 → 优先级/位置/冲突；P3 过 P4 挂 → 工具提示词甲。
 2. **金丝雀**：K1–K5 五条，30 秒判断甲厚薄。全过 → 甲薄；只挂 K2/K3 → 内容层厚，主攻 M1/M5；全挂 → 回定层。
@@ -203,11 +223,13 @@ ledger.jsonl         每轮一条，字段与 v2 §9 的严格 JSON 对齐
 state.json           phase / round / armed
 rounds/round-N.json  完整轮次记录
 patches/round-N.patch + .sha256
+code/round-N/        代码轮改过的文件原始字节 + manifest（回滚用）
+research/round-N.md  该轮检索到的参考项目
 ```
 
 ### 面板与接口
 
-「自进化」页：开关、轮次、阶段、保留数、上一轮端到端、台账、仓库与模型状态，四个按钮（开启/关闭、跑一轮、回滚上一轮、同步仓库）。
+「自进化」页：开关、轮次、阶段、轨道、保留数、上一轮（提示词轮看端到端，代码轮看改了什么文件、测试通过多少）、台账、仓库与模型状态，四个按钮（开启/关闭、跑一轮、回滚上一轮、同步仓库）。
 
 ```bash
 curl -s http://127.0.0.1:PORT/point/state | jq .evolve     # 只读快照
@@ -290,7 +312,7 @@ printf '\n# reload\n' >> ~/.dsh/profiles/desktop/cordis.patch.yml
 node --test "test/*.test.mjs"
 ```
 
-68 项：分段完整性、模式单调递增、规则过滤（含意图表同步）、`maxChars` 裁剪、身份参数化、违禁词自检、信封往返、`apply` 的四种注册路径，用真实 `@deepseek-ai/dsh-system-prompt` 服务挂载后组装提示词的集成测试（找不到 dsh 应用时自动跳过，可用 `DSH_APP_ROOT` 指路），`enabled: false` 下的状态路由与 405/HEAD 分支、`client.js` 的假 React 渲染测试（五个页签、错误分支、`/point` 命令选中面板）与 `clientSnapshot` 的图行诊断；`scope: preset` 下不注入段、预设探针的注册/缺失/抛错三态、`llm/stream` 的标记闸门、`point/section` 行在真实服务上的注入；自进化侧的分层判读表、金丝雀、守门、Wilson 区间、8 候选与空变体、变换链回放、store 的提交/回滚/patch、一轮完整 keep 与无模型时 blocked、配置归一化。
+83 项：分段完整性、模式单调递增、规则过滤（含意图表同步）、`maxChars` 裁剪、身份参数化、违禁词自检、信封往返、`apply` 的四种注册路径，用真实 `@deepseek-ai/dsh-system-prompt` 服务挂载后组装提示词的集成测试（找不到 dsh 应用时自动跳过，可用 `DSH_APP_ROOT` 指路），`enabled: false` 下的状态路由与 405/HEAD 分支、`client.js` 的假 React 渲染测试（五个页签、错误分支、`/point` 命令选中面板）与 `clientSnapshot` 的图行诊断；`scope: preset` 下不注入段、预设探针的注册/缺失/抛错三态、`llm/stream` 的标记闸门、`point/section` 行在真实服务上的注入；自进化侧的分层判读表、金丝雀、守门、Wilson 区间、8 候选与空变体、变换链回放、store 的提交/回滚/patch、一轮完整 keep 与无模型时 blocked、配置归一化；代码轮侧的研究缓存与失败降级、JSON 提取、路径白名单（`test/`、`package.json`、`..` 全拒）、沙盒在副本里跑测试与语法检查、代码轮 keep/revert、回滚备份往返、revert 也推进轮次。
 
 ## 回滚
 
