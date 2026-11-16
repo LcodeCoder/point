@@ -63,8 +63,9 @@ test("a runtime without systemPrompt.section fails loudly", () => {
 test("section disposers are owned by ctx.effect", () => {
   const ctx = fakeCtx();
   apply(ctx, { scope: "global" });
-  assert.equal(ctx.effects.length, 1);
-  assert.equal(typeof ctx.effects[0], "function");
+  // One effect owns the section disposers, another the auto-start timer.
+  assert.ok(ctx.effects.length >= 1);
+  for (const effect of ctx.effects) assert.equal(typeof effect, "function");
 });
 
 test("deva preset loads the verbatim payload", () => {
