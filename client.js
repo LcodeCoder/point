@@ -503,6 +503,11 @@ window.__ModuleLoader__.load({
             value: ev.configured ? '开' : '关（会话内可开）',
             tone: ev.configured ? 'ok' : null,
           }),
+          h(Row, {
+            label: '空闲才跑',
+            value: ev.idleOnly ? `是 · 静默 ${Math.round((ev.idleMs || 0) / 1000)}s` : '否 · 一直跑',
+            tone: ev.idleOnly ? 'ok' : 'warn',
+          }),
           h(Row, { label: '仓库', value: ev.repo || '未配置' }),
           h(Row, { label: '分支 / 推送', value: `${ev.branch || 'main'} · ${ev.push ? 'push' : '仅本地'}` }),
           h(Row, {

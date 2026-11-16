@@ -152,6 +152,49 @@ test("one round measures, keeps the winner, writes the ledger and publishes", as
   assert.equal(createStore(dir).active().chain.length, 1);
 });
 
+test("the loop waits for an idle window; a manual round does not", async () => {
+  const dir = tmp();
+  const waits = [];
+  const runner = {
+    available: () => true,
+    async runBatch({ level, targets, protocol }) {
+      const n = targets.length;
+      const text = String(protocol ?? "");
+      let ok = 0;
+      if (level.id === "p0" || level.id === "p1") ok = n;
+      else if (level.id === "p2") ok = 0;
+      else if (targets.some((target) => String(target.id).startsWith("k"))) ok = n;
+      else ok = text.includes("优先级 0") ? n : 0;
+      return { n, ok, rate: n ? ok / n : 0, chars: text.length };
+    },
+  };
+  const engine = createEvolve({
+    config: { enabled: true, rounds: 1, budget: "fast", idleMs: 1500 },
+    store: createStore(dir),
+    runner,
+    publisher: { publishRound: async () => ({ ok: true }) },
+    renderProtocol: () => `${"【操作层｜基线】执行。\n".repeat(600)}`,
+    getBaseline: () => "You are a helpful agent.",
+    getIdentity: () => ({}),
+    waitIdle: async ({ quietMs }) => { waits.push(quietMs); },
+  });
+
+  await engine.start();
+  assert.deepEqual(waits, [1500], "the loop checks for quiet before a round");
+
+  const manual = createEvolve({
+    config: { enabled: true, rounds: 1, budget: "fast", idleMs: 1500 },
+    store: createStore(tmp()),
+    runner,
+    publisher: { publishRound: async () => ({ ok: true }) },
+    renderProtocol: () => `${"【操作层｜基线】执行。\n".repeat(600)}`,
+    getBaseline: () => "You are a helpful agent.",
+    getIdentity: () => ({}),
+    waitIdle: async () => { throw new Error("manual rounds must not wait"); },
+  });
+  await manual.runRound();
+});
+
 test("no model means a blocked round, not a fabricated measurement", async () => {
   const dir = tmp();
   const engine = createEvolve({

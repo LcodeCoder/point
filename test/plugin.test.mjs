@@ -282,7 +282,7 @@ test("the preset probe survives a roster that throws", async () => {
 test("the refusal retry only wraps requests that carry the protocol", async () => {
   const ctx = fakeHost();
   apply(ctx, { scope: "global" });
-  const hook = ctx.handlers.get("llm/stream")[0];
+  const hook = ctx.handlers.get("llm/stream").at(-1);
   assert.ok(hook, "the llm/stream hook is registered");
 
   const plain = { messages: [{ role: "system", content: "plain prompt" }] };
@@ -297,12 +297,20 @@ test("the refusal retry only wraps requests that carry the protocol", async () =
   const ours = { messages: [{ role: "system", content: `${MARKER}\nbody` }] };
   const wrapped = hook(ours, () => (async function* () {})());
   assert.equal(typeof wrapped[Symbol.asyncIterator], "function");
+
+  // A probe is a measurement: the retry must never rewrite it.
+  const probe = { purpose: "point-probe", system: `${MARKER}\nbody`, messages: [{ role: "user", content: "x" }] };
+  assert.deepEqual(hook(probe, () => ({ kind: "probe-stream" })), { kind: "probe-stream" });
 });
 
 test("retryRefusal: false leaves the stream alone", () => {
   const ctx = fakeHost();
   apply(ctx, { scope: "global", retryRefusal: false });
-  assert.equal(ctx.handlers.has("llm/stream"), false);
+  const listeners = ctx.handlers.get("llm/stream") || [];
+  assert.equal(listeners.length, 1, "only the idle tracker remains");
+  const sentinel = { kind: "stream" };
+  const out = listeners[0]({ messages: [{ role: "system", content: `${MARKER}\nbody` }] }, () => sentinel);
+  assert.equal(out, sentinel, "no buffering, no re-ask");
 });
 
 test("point/section is a self-contained cordis row", () => {
