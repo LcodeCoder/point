@@ -1,7 +1,7 @@
 {
   "name": "point",
-  "version": "0.2.0",
-  "description": "DeepSeek Harness plugin: the armor-break protocol abstracted from Deva 0.1.15 - identity kernel, scope axiom, draft-defect review loop, category lock, routing tables, output contract.",
+  "version": "0.3.0",
+  "description": "DeepSeek Harness plugin: the armor-break protocol abstracted from Deva 0.1.15, packaged as a preset mode, with refusal retry, red-team skills and a self-evolution loop (layer attribution, canary, one operator per round, per-round GitHub push).",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
@@ -12,7 +12,8 @@
     "./envelope": "./lib/envelope.js",
     "./package.json": "./package.json",
     "./section": "./lib/section.js",
-    "./refusal": "./lib/refusal.js"
+    "./refusal": "./lib/refusal.js",
+    "./evolve": "./lib/evolve/index.js"
   },
   "bin": {
     "point": "lib/cli.js"

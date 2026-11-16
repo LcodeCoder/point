@@ -458,11 +458,13 @@ window.__ModuleLoader__.load({
     }
 
     function Evolve({ data, busy, onAction }) {
-      const ev = data.evolve || { available: false }
+      const ev = data.evolve || { available: false, stale: true }
       if (!ev.available) {
         return h('div', { className: 'ptp-empty' },
-          h('b', null, '自进化未就绪'),
-          ev.error || 'Host 半边没有创建 evolve 运行时。',
+          h('b', null, ev.stale ? 'Host 半是旧版本' : '自进化未就绪'),
+          ev.stale
+            ? '这个页签的开关与台账由 Host 半提供；重启 dsh 后接管。'
+            : ev.error || 'Host 半边没有创建 evolve 运行时。',
           h('br'),
           `状态目录：${ev.dir || '—'}`)
       }
