@@ -19,7 +19,7 @@ point/
 ├── client.js         浏览器半：侧栏 tab + 面板 + /point 命令（手写，无构建）
 ├── prompts/deva.txt  Deva 原文（结构保留，身份与称谓已归一为 pointer / 大人，用于对照与 deva 预设）
 ├── skills/redteam/   红队路由器技能（recon → 入口 → 隧道 → 横向 → 证据）
-├── test/             84 个测试，含真实 SystemPrompt 服务的挂载集成测试
+├── test/             86 个测试，含真实 SystemPrompt 服务的挂载集成测试
 ├── cordis.patch.yml  两行：point 常驻 + 破甲模式预设
 └── METHOD.md         逆向记录：九层机制、行号索引、抽象映射
 ```

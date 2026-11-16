@@ -211,3 +211,17 @@ test("without a proposer the code track falls back to the prompt track", async (
   assert.equal(record.decision, "blocked");
   assert.equal(record.reason, "no-model");
 });
+
+test("a proposal cannot silently drop an export", () => {
+  const before = "export function keep() {}\nexport const value = 1;\n";
+  const workspace = mkdtempSync(join(tmpdir(), "point-prop-"));
+  writeFileSync(join(workspace, "lib.js"), before, "utf8");
+  const read = () => before;
+
+  const dropped = validateProposal({ files: [{ path: "lib/x.js", content: "export function keep() { return 2 }\n" }] }, { workspace, readFile: read });
+  assert.equal(dropped.ok, false);
+  assert.match(dropped.error, /drops exports from lib\/x\.js: value/);
+
+  const kept = validateProposal({ files: [{ path: "lib/x.js", content: `${before}export const extra = 2;\n` }] }, { workspace, readFile: read });
+  assert.equal(kept.ok, true);
+});
