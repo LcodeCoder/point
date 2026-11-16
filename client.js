@@ -494,17 +494,19 @@ window.__ModuleLoader__.load({
           ev.phase === 'done'
             ? `本轮预算（${ev.maxRounds} 轮）已用完，链保留；点「开启」开始新一轮，台账会归档。`
             : '提示词轮：定层 → 金丝雀 → 选算子 → 8 个候选 → 小样本 → 全量 → 密封。代码轮：GitHub 检索 → 写完整文件 → 沙盒副本跑全套测试 → 通过才落地。跑完一轮按节奏等下一轮，同时要等你静默。'),
+        ev.running ? h('div', { className: 'ptp-note' },
+          `正在跑第 ${ev.round + 1} 轮 · 阶段 ${ev.phase}。一轮要几十次到几百次模型调用，面板每 4 秒刷新，跑完会出现在台账里。`) : null,
         h('div', { className: 'ptp-actions' },
           h('button', {
             className: 'ptp-btn ptp-primary', type: 'button', disabled: !!busy,
             onClick: () => onAction(ev.armed ? 'stop' : 'start'),
           }, ev.armed ? '关闭自动迭代' : '开启自动迭代'),
           h('button', {
-            className: 'ptp-btn', type: 'button', disabled: !!busy,
+            className: 'ptp-btn', type: 'button', disabled: !!busy || !!ev.running,
             onClick: () => onAction('round'),
           }, busy === 'round' ? '跑一轮…' : '跑一轮'),
           h('button', {
-            className: 'ptp-btn', type: 'button', disabled: !!busy,
+            className: 'ptp-btn', type: 'button', disabled: !!busy || !!ev.running,
             onClick: () => onAction('round', { track: 'code' }),
           }, busy === 'round:code' ? '跑代码轮…' : '跑代码轮'),
           h('button', {
@@ -593,7 +595,11 @@ window.__ModuleLoader__.load({
           })),
         last ? h('div', { className: 'ptp-list' },
           h(SectionTitle, { title: '上一轮' }),
-          h(Row, { label: `第 ${last.round} 轮 · ${last.track === 'code' ? '代码' : '提示词'}`, value: last.decision || '—' }),
+          h(Row, {
+            label: `第 ${last.round} 轮 · ${last.track === 'code' ? '代码' : '提示词'}`,
+            value: `${last.decision || '—'}${last.reason ? ` · ${last.reason}` : ''}`,
+            tone: last.decision === 'keep' ? 'ok' : last.decision === 'revert' || last.decision === 'blocked' ? 'warn' : null,
+          }),
           last.title ? h(Row, { label: '改动', value: last.title }) : null,
           last.files && last.files.length ? h(Row, { label: '文件', value: last.files.map((file) => file.path).join('、') }) : null,
           last.tests ? h(Row, {

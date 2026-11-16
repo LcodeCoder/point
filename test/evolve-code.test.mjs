@@ -42,6 +42,17 @@ test("research caches a brief and renders it for the proposer", async () => {
   assert.match(research.notes()[0].text, /prompt firewall/);
 });
 
+test("a proposal that drops an export is rejected even if the name survives", () => {
+  const before = readFileSync(new URL("../lib/evolve/research.js", import.meta.url), "utf8");
+  const broken = before.replace("export function createResearch", "function createResearch");
+  const verdict = validateProposal(
+    { title: "t", files: [{ path: "lib/evolve/research.js", content: broken }] },
+    { workspace: new URL("..", import.meta.url).pathname, readFile: (path) => readFileSync(path, "utf8") },
+  );
+  assert.equal(verdict.ok, false);
+  assert.match(verdict.error, /drops exports .*createResearch/);
+});
+
 test("a publisher without a repository skips git entirely", async () => {
   const calls = [];
   const publisher = createPublisher({
