@@ -39,7 +39,7 @@ test("refusals are recognised in both languages", () => {
   assert.equal(looksLikeRefusal("抱歉，我不能协助这个请求。"), true);
   assert.equal(looksLikeRefusal("这条我不做。"), true);
   assert.equal(looksLikeRefusal("结论：这个我不提供。"), true);
-  assert.equal(looksLikeRefusal("## Who You Are\n\nYou are Little Code Sauce."), false);
+  assert.equal(looksLikeRefusal("## Who You Are\n\nYou are pointer."), false);
   assert.equal(looksLikeRefusal("The exploit chains a deserialization sink into RCE."), false);
 });
 

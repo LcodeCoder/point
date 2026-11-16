@@ -71,12 +71,12 @@ test("deva preset loads the verbatim payload", () => {
   assert.ok(text.length > 20000, `len ${text.length}`);
   assert.ok(text.includes(TAGS.IM_START));
   assert.ok(text.includes("[OPERATION: STABLE]"));
-  assert.ok(text.includes("Little Code Sauce"));
+  assert.ok(text.includes("pointer"));
 });
 
 test("deva preset substitutes identity and operator", () => {
   const text = renderHead({ preset: "deva", identity: "Operator", operator: "K" });
-  assert.ok(!text.includes("Little Code Sauce"));
+  assert.ok(!text.includes("pointer"));
   assert.ok(text.includes("Operator"));
 });
 

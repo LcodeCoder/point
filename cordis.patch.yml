@@ -25,8 +25,8 @@
         position: head         # head | tail | both
         tailMode: anchor       # anchor | full
         envelope: false        # wrap in the ChatML system turn
-        identity: Little Code Sauce
-        operator: YG
+        identity: pointer
+        operator: 大人
         language: Simplified Chinese
         openingTag: "[Y] —"
         rules: all             # all | [1,13,15] | "pentest,web"
@@ -213,8 +213,8 @@
               position: head
               tailMode: anchor
               envelope: false
-              identity: Little Code Sauce
-              operator: YG
+              identity: pointer
+              operator: 大人
               language: Simplified Chinese
               openingTag: "[Y] —"
               rules: all

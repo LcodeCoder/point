@@ -3,7 +3,7 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, existsSync, readFileSync } from "node:fs";
+import { mkdtempSync, existsSync, readFileSync, readdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -92,6 +92,19 @@ test("the store keeps a chain, a patch and a rollback anchor", () => {
   const back = store.rollback();
   assert.deepEqual(store.active().chain, []);
   assert.ok(back);
+});
+
+test("a new cycle keeps the chain and archives the ledger", () => {
+  const dir = tmp();
+  const store = createStore(dir);
+  store.commit([{ axis: "A2", id: "c3" }], { round: 6, sha: "x" });
+  store.appendLedger({ round: 6, decision: "keep" });
+  const next = store.newCycle();
+  assert.equal(next.round, 0);
+  assert.equal(next.chain.length, 1);
+  assert.equal(store.ledger().length, 0);
+  const archived = readdirSync(dir).filter((name) => name.startsWith("ledger-"));
+  assert.equal(archived.length, 1);
 });
 
 test("one round measures, keeps the winner, writes the ledger and publishes", async () => {

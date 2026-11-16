@@ -17,7 +17,7 @@ point/
 │   ├── lint.js       载荷自检：扫违禁词，跳过引用它们的段落
 │   └── cli.js        命令行：render / anchor / sizes / rules / check / skills
 ├── client.js         浏览器半：侧栏 tab + 面板 + /point 命令（手写，无构建）
-├── prompts/deva.txt  Deva 原文（26,639 字符，逐字保留，用于对照与 deva 预设）
+├── prompts/deva.txt  Deva 原文（结构保留，身份与称谓已归一为 pointer / 大人，用于对照与 deva 预设）
 ├── skills/redteam/   红队路由器技能（recon → 入口 → 隧道 → 横向 → 证据）
 ├── test/             56 个测试，含真实 SystemPrompt 服务的挂载集成测试
 ├── cordis.patch.yml  两行：point 常驻 + 破甲模式预设
@@ -81,8 +81,8 @@ point, deployment:persona-prefix, deployment:persona-suffix, point:tail
     position: head       # head | tail | both
     tailMode: anchor     # anchor | full
     envelope: false      # 是否套 ChatML 信封
-    identity: Little Code Sauce
-    operator: YG
+    identity: pointer
+    operator: 大人
     language: Simplified Chinese
     openingTag: "[Y] —"
     rules: all           # all | [1,13,15] | "pentest,web"
@@ -106,7 +106,7 @@ point, deployment:persona-prefix, deployment:persona-suffix, point:tail
 ### 预设
 
 - `point`（默认）：抽象版。参数化、表驱动、去掉抓取伪影。
-- `deva`：Deva 原文逐字回放，只替换 `identity` / `operator`。做 A/B 对照用。
+- `deva`：Deva 原文回放，只替换 `identity` / `operator`。做 A/B 对照用。
 - `custom`：`prompt` 或 `promptPath` 直接给文本；带信封的会被自动拆掉。
 
 ### 档位

@@ -71,7 +71,7 @@ test("identity, operator and opening tag are parameterized", () => {
   assert.ok(text.includes("You are Operator."));
   assert.ok(text.includes("The operator is K."));
   assert.ok(text.includes("[K] >"));
-  assert.ok(!text.includes("Little Code Sauce"));
+  assert.ok(!text.includes("pointer"));
 });
 
 test("anchor is short and keeps the kernel claims", () => {

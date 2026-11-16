@@ -477,7 +477,9 @@ window.__ModuleLoader__.load({
           h(Card, { label: '阶段', value: ev.phase || 'idle' }),
           h(Card, { label: '保留', value: `${ev.kept}`, unit: `/ ${ev.ledger} 轮` })),
         h('div', { className: 'ptp-note' },
-          '每轮：定层 → 金丝雀 → 选该层一个算子 → 8 个候选 → 小样本 → 全量 → 密封 → keep/revert。保留的一轮写 patch、记台账，并提交推送到仓库。'),
+          ev.phase === 'done'
+            ? `本轮预算（${ev.maxRounds} 轮）已用完，链保留；点「开启」开始新一轮，台账会归档。`
+            : '每轮：定层 → 金丝雀 → 选该层一个算子 → 8 个候选 → 小样本 → 全量 → 密封 → keep/revert。轮与轮之间没有等待，跑完一轮立刻进下一轮。'),
         h('div', { className: 'ptp-actions' },
           h('button', {
             className: 'ptp-btn ptp-primary', type: 'button', disabled: !!busy,
