@@ -1,6 +1,6 @@
 {
   "name": "point",
-  "version": "0.4.8",
+  "version": "0.5.0",
   "author": "Lcode",
   "description": "DeepSeek Harness plugin: the armor-break protocol abstracted from Deva 0.1.15, packaged as a preset mode, with refusal retry, red-team skills and a self-evolution loop (layer attribution, canary, one operator per round, per-round GitHub push).",
   "type": "module",

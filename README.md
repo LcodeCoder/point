@@ -195,16 +195,47 @@ point, deployment:persona-prefix, deployment:persona-suffix, point:tail
 4. **候选**：每个轴 8 个变体，含 1 个空变体（对照组）。空变体在并列时优先，防止把噪声当成效果。
 5. **测量**：小样本 T1 → 全量 T1+T2（`fast` 24 条 / `full` 100 条）→ 密封 T3 只验收。分层报破甲率，Wilson 95% CI，Δ<3pp 记噪声。
 6. **守门**：token 增幅 ≤10%、工具成功率 -2pp、退化率 ≤8%、persona 不漂移、密封集与设计集差 ≤15pp（过拟合即回滚）。
-7. **决定**：keep / revert / noise / stop / blocked。keep 才写进 `active.json`，下一轮从这里继续。
+7. **自检**：扫即将保留的全文（占位符 / persona 三针 / 信封配平 / 禁词），有 high 就 revert。
+8. **决定**：keep / revert / noise / stop / blocked。keep 才写进 `active.json`，下一轮从这里继续。
 
 同一层连续两轮 Δ<3pp 就换层；打错层两次强制停轮重跑定层；6 轮用完交台账。
+
+### 每轮自检
+
+一轮在写盘之前先过两道扫描，扫描不通过就不允许 keep：
+
+- **代码轮**：沙盒测试通过后，重新读**线上目录**（不是沙盒副本），按规则表扫 `lib/`、`client.js`、`scripts/`。命中任一 high 直接 revert，一个字节都不写。
+- **提示词轮**：判定之前先扫即将保留的全文——字面量占位符（`{language}` 这类）、persona 三针（名字/operator/语言）、`<|im_start|>`/`<|im_end|>` 是否配平、禁词表命中。
+
+规则来自 0.4.8 那次审计里真实出现过的形态，每条都能指到 `file:line`：
+
+| 级别 | 规则 | 拦的是什么 |
+|---|---|---|
+| high | `literal-placeholder` | 生成文本里留着 `{language}`，守卫永远匹配不到 |
+| high | `git-add-all` | `git add -A` 把无关改动卷进一轮提交 |
+| high | `unawaited-publish` | `record.publish = publisher.publishRound(...)` 没 await |
+| high | `duplicate-branch` | 同一个 `action === "x"` 分支写了两遍 |
+| high | `hardcoded-home` | `/Volumes/…`、`/Users/…` 这类本机绝对路径 |
+| high | `process-exit` | 库代码把宿主进程退掉 |
+| high | `shell-true` | `shell: true` 拼参数 |
+| high | `unguarded-status` | 面板裸读 `data.status.enabled` |
+| high | `destroy-before-reply` | 先 `req.destroy()` 再写响应 |
+| medium | `empty-catch` / `console-log` / `test-only` / `sync-exec-in-host` | 吞错、脏输出、`.only`、路由里同步子进程 |
+| low | `todo-marker` | 未完成标记 |
+
+每轮的扫描结果写进该轮记录的 `audit` 字段，面板「上一轮 → 自检」显示通过还是几个高危；命令行随时可全量扫一遍：
+
+```bash
+node lib/cli.js audit          # 有 high 时退出码 1
+node lib/cli.js audit --json
+```
 
 ### 每轮上传 GitHub
 
 `push: true` 时，每个 keep 的轮次都会在包目录里提交并推送：
 
 ```bash
-git add -A
+git add -- <本轮文件>
 git commit -m "evolve round 3: A4 返回包装 keep 17%→50%"
 git push -u origin main
 ```
@@ -317,7 +348,7 @@ printf '\n# reload\n' >> ~/.dsh/profiles/desktop/cordis.patch.yml
 node --test "test/*.test.mjs"
 ```
 
-98 项：分段完整性、模式单调递增、规则过滤（含意图表同步）、`maxChars` 裁剪、身份参数化、违禁词自检、信封往返、`apply` 的四种注册路径，用真实 `@deepseek-ai/dsh-system-prompt` 服务挂载后组装提示词的集成测试（找不到 dsh 应用时自动跳过，可用 `DSH_APP_ROOT` 指路），`enabled: false` 下的状态路由与 405/HEAD 分支、`client.js` 的假 React 渲染测试（五个页签、错误分支、`/point` 命令选中面板）与 `clientSnapshot` 的图行诊断；`scope: preset` 下不注入段、预设探针的注册/缺失/抛错三态、`llm/stream` 的标记闸门、`point/section` 行在真实服务上的注入；自进化侧的分层判读表、金丝雀、守门、Wilson 区间、8 候选与空变体、变换链回放、store 的提交/回滚/patch、一轮完整 keep 与无模型时 blocked、配置归一化；代码轮侧的研究缓存与失败降级、JSON 提取、路径白名单（`test/`、`package.json`、`..` 全拒）、沙盒在副本里跑测试与语法检查、代码轮 keep/revert、回滚备份往返、revert 也推进轮次；审计回归项：语言占位符插值、空规则选择、分段账本不超出实际载荷、信封裁剪后闭合、普通技术性推脱不算拒绝、reasoning 增量不提前判定、并发手动轮复用同一 promise、发布只 stage 本轮文件、只读 store 不建目录。
+104 项：分段完整性、模式单调递增、规则过滤（含意图表同步）、`maxChars` 裁剪、身份参数化、违禁词自检、信封往返、`apply` 的四种注册路径，用真实 `@deepseek-ai/dsh-system-prompt` 服务挂载后组装提示词的集成测试（找不到 dsh 应用时自动跳过，可用 `DSH_APP_ROOT` 指路），`enabled: false` 下的状态路由与 405/HEAD 分支、`client.js` 的假 React 渲染测试（五个页签、错误分支、`/point` 命令选中面板）与 `clientSnapshot` 的图行诊断；`scope: preset` 下不注入段、预设探针的注册/缺失/抛错三态、`llm/stream` 的标记闸门、`point/section` 行在真实服务上的注入；自进化侧的分层判读表、金丝雀、守门、Wilson 区间、8 候选与空变体、变换链回放、store 的提交/回滚/patch、一轮完整 keep 与无模型时 blocked、配置归一化；代码轮侧的研究缓存与失败降级、JSON 提取、路径白名单（`test/`、`package.json`、`..` 全拒）、沙盒在副本里跑测试与语法检查、代码轮 keep/revert、回滚备份往返、revert 也推进轮次；审计回归项：语言占位符插值、空规则选择、分段账本不超出实际载荷、信封裁剪后闭合、普通技术性推脱不算拒绝、reasoning 增量不提前判定、并发手动轮复用同一 promise、发布只 stage 本轮文件、只读 store 不建目录、自检规则表（占位符 / `git add -A` / 未 await 的发布 / 重复分支 / 裸读状态 / 信封配平）、代码轮自检不过不写盘、提示词轮自检不过不 keep。
 
 ## 回滚
 

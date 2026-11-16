@@ -341,6 +341,13 @@ window.__ModuleLoader__.load({
       }
     }
 
+    const PHASES = {
+      idle: '空闲', attribution: '定层', canary: '金丝雀', small: '小样本', full: '全量',
+      sealed: '密封', guard: '回归', decide: '判定', research: '检索', propose: '提案',
+      sandbox: '沙盒', audit: '自检', publish: '推送', done: '完成', blocked: '受阻', error: '出错',
+    }
+    function phaseLabel(id) { return PHASES[id] || id || '空闲' }
+
     function modeLabel(data) {
       const m = modeOf(data)
       const enabled = !!(data.status && data.status.enabled)
@@ -504,7 +511,7 @@ window.__ModuleLoader__.load({
         h('div', { className: 'ptp-cards' },
           h(Card, { label: '开关', value: ev.armed ? '已开启' : '已关闭' }),
           h(Card, { label: '轮次', value: `${ev.round}`, unit: `/ ${ev.maxRounds}` }),
-          h(Card, { label: '阶段', value: ev.phase || 'idle' }),
+          h(Card, { label: '阶段', value: phaseLabel(ev.phase) }),
           h(Card, { label: '轨道', value: trackLabel(ev.tracks) }),
           h(Card, { label: '保留', value: `${ev.kept}`, unit: `/ ${ev.ledger} 轮` })),
         h('div', { className: 'ptp-note' },
@@ -512,7 +519,7 @@ window.__ModuleLoader__.load({
             ? `本轮预算（${ev.maxRounds} 轮）已用完，链保留；点「开启」开始新一轮，台账会归档。`
             : '提示词轮：定层 → 金丝雀 → 选算子 → 8 个候选 → 小样本 → 全量 → 密封。代码轮：GitHub 检索 → 写完整文件 → 沙盒副本跑全套测试 → 通过才落地。跑完一轮按节奏等下一轮，同时要等你静默。'),
         ev.running ? h('div', { className: 'ptp-note' },
-          `正在跑第 ${ev.round + 1} 轮 · 阶段 ${ev.phase}。一轮要几十次到几百次模型调用，面板每 4 秒刷新，跑完会出现在台账里。`) : null,
+          `正在跑第 ${ev.round + 1} 轮 · 阶段 ${phaseLabel(ev.phase)}。一轮要几十次到几百次模型调用，面板每 4 秒刷新，跑完会出现在台账里。`) : null,
         h('div', { className: 'ptp-actions' },
           h('button', {
             className: 'ptp-btn ptp-primary', type: 'button', disabled: !!busy,
@@ -626,6 +633,13 @@ window.__ModuleLoader__.load({
             tone: last.tests.ok ? 'ok' : 'warn',
           }) : null,
           last.research ? h(Row, { label: '检索', value: `${last.research.hits || 0} 个参考项目` }) : null,
+          last.audit ? h(Row, {
+            label: '自检',
+            value: last.audit.ok === false
+              ? `${last.audit.high || 0} 个高危 · ${(last.audit.findings || []).slice(0, 2).map((row) => row.rule).join('、')}`
+              : `通过 · ${(last.audit.scanned || []).length} 个文件`,
+            tone: last.audit.ok === false ? 'warn' : 'ok',
+          }) : null,
           h(Row, {
             label: '端到端',
             value: last.e2e ? `${pctOf(last.e2e.before)} → ${pctOf(last.e2e.after)}` : '—',
