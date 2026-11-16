@@ -457,6 +457,12 @@ window.__ModuleLoader__.load({
             h('span', { className: 'ptp-mono' }, hit.section))))))
     }
 
+    function fmtIdle(ms) {
+      const value = Number(ms) || 0
+      if (value >= 60000) return `${Math.round(value / 60000)} 分钟`
+      return `${Math.round(value / 1000)} 秒`
+    }
+
     function Evolve({ data, busy, onAction }) {
       const ev = data.evolve || { available: false, stale: true }
       if (!ev.available) {
@@ -505,7 +511,7 @@ window.__ModuleLoader__.load({
           }),
           h(Row, {
             label: '空闲才跑',
-            value: ev.idleOnly ? `是 · 静默 ${Math.round((ev.idleMs || 0) / 1000)}s` : '否 · 一直跑',
+            value: ev.idleOnly ? `是 · 静默 ${fmtIdle(ev.idleMs)}` : '否 · 一直跑',
             tone: ev.idleOnly ? 'ok' : 'warn',
           }),
           h(Row, { label: '仓库', value: ev.repo || '未配置' }),

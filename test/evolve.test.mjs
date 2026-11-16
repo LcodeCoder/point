@@ -220,4 +220,7 @@ test("the evolve config normalizes YAML strings and clamps the round budget", ()
   assert.equal(cfg.push, false);
   assert.equal(cfg.repo, "https://github.com/x/y.git");
   assert.equal(cfg.dryRun, false);
+  assert.equal(cfg.idleOnly, true, "the loop yields to the operator by default");
+  assert.equal(cfg.idleMs, 600000, "ten quiet minutes before a round starts");
+  assert.equal(coerceEvolve({ idleMs: "99999999" }).idleMs, 3600000, "the quiet window is capped at an hour");
 });
