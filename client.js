@@ -174,13 +174,13 @@ window.__ModuleLoader__.load({
       return data
     }
 
-    async function postEvolve(action) {
+    async function postEvolve(action, extra) {
       const url = new URL('point/evolve', document.baseURI)
       const res = await fetch(url, {
         method: 'POST',
         cache: 'no-store',
         headers: { 'content-type': 'application/json', accept: 'application/json' },
-        body: JSON.stringify({ action }),
+        body: JSON.stringify(Object.assign({ action }, extra || {})),
       })
       const data = await res.json().catch(() => null)
       if (!res.ok || !data || data.ok !== true) throw new Error((data && data.error) || `HTTP ${res.status}`)
@@ -501,6 +501,10 @@ window.__ModuleLoader__.load({
           }, busy === 'round' ? '跑一轮…' : '跑一轮'),
           h('button', {
             className: 'ptp-btn', type: 'button', disabled: !!busy,
+            onClick: () => onAction('round', { track: 'code' }),
+          }, busy === 'round:code' ? '跑代码轮…' : '跑代码轮'),
+          h('button', {
+            className: 'ptp-btn', type: 'button', disabled: !!busy,
             onClick: () => onAction('rollback'),
           }, '回滚上一轮'),
           h('button', {
@@ -601,9 +605,9 @@ window.__ModuleLoader__.load({
         return () => { alive = false; clearInterval(id) }
       }, [nonce])
 
-      const onEvolve = useCallback((action) => {
-        setBusy(action)
-        postEvolve(action).then((result) => {
+      const onEvolve = useCallback((action, extra) => {
+        setBusy(extra && extra.track === 'code' ? `${action}:code` : action)
+        postEvolve(action, extra).then((result) => {
           setToast(action === 'round' ? '已开跑' : '已执行')
           if (result && result.error) setToast(`失败：${result.error}`)
         }).catch((error) => {
