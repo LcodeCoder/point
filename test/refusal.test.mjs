@@ -110,3 +110,37 @@ test("a normal answer passes through untouched", async () => {
   assert.equal(calls, 1);
   assert.equal(text(chunks), "Here is the plan: step one.");
 });
+
+test("ordinary technical hedges are not refusals", () => {
+  const hedges = [
+    "I can't reproduce this without the stack trace. Here is what I would check first.",
+    "I can't tell from the snippet alone whether the handler is async.",
+    "这里我不能保证顺序，因为 Redis 的 pub/sub 不保序。",
+    "我不能确定这个 API 是否幂等，先看文档。",
+  ];
+  for (const text of hedges) assert.equal(looksLikeRefusal(text), false, text);
+});
+
+test("a reasoning delta does not end the buffer before any text arrives", async () => {
+  const frames = [];
+  const chunks = [
+    { type: "reasoning-delta", text: "thinking..." },
+    { type: "text-delta", text: "抱歉，我不能协助这个请求。" },
+    { type: "finish" },
+  ];
+  const second = [
+    { type: "text-delta", text: "好的，下面是步骤。" },
+    { type: "finish" },
+  ];
+  let call = 0;
+  const stream = () => {
+    const list = call++ === 0 ? chunks : second;
+    return (async function* () { for (const chunk of list) yield chunk; })();
+  };
+  const out = [];
+  for await (const chunk of streamWithRefusalRetry(stream, { messages: [{ role: "system", content: "[OPERATION: STABLE]" }] }, { onRetry: () => frames.push(1) })) {
+    out.push(chunk);
+  }
+  assert.equal(frames.length, 1, "the refusal is retried");
+  assert.match(out.filter((chunk) => chunk.type === "text-delta").map((chunk) => chunk.text).join(""), /下面是步骤/);
+});

@@ -317,7 +317,7 @@ printf '\n# reload\n' >> ~/.dsh/profiles/desktop/cordis.patch.yml
 node --test "test/*.test.mjs"
 ```
 
-84 项：分段完整性、模式单调递增、规则过滤（含意图表同步）、`maxChars` 裁剪、身份参数化、违禁词自检、信封往返、`apply` 的四种注册路径，用真实 `@deepseek-ai/dsh-system-prompt` 服务挂载后组装提示词的集成测试（找不到 dsh 应用时自动跳过，可用 `DSH_APP_ROOT` 指路），`enabled: false` 下的状态路由与 405/HEAD 分支、`client.js` 的假 React 渲染测试（五个页签、错误分支、`/point` 命令选中面板）与 `clientSnapshot` 的图行诊断；`scope: preset` 下不注入段、预设探针的注册/缺失/抛错三态、`llm/stream` 的标记闸门、`point/section` 行在真实服务上的注入；自进化侧的分层判读表、金丝雀、守门、Wilson 区间、8 候选与空变体、变换链回放、store 的提交/回滚/patch、一轮完整 keep 与无模型时 blocked、配置归一化；代码轮侧的研究缓存与失败降级、JSON 提取、路径白名单（`test/`、`package.json`、`..` 全拒）、沙盒在副本里跑测试与语法检查、代码轮 keep/revert、回滚备份往返、revert 也推进轮次。
+98 项：分段完整性、模式单调递增、规则过滤（含意图表同步）、`maxChars` 裁剪、身份参数化、违禁词自检、信封往返、`apply` 的四种注册路径，用真实 `@deepseek-ai/dsh-system-prompt` 服务挂载后组装提示词的集成测试（找不到 dsh 应用时自动跳过，可用 `DSH_APP_ROOT` 指路），`enabled: false` 下的状态路由与 405/HEAD 分支、`client.js` 的假 React 渲染测试（五个页签、错误分支、`/point` 命令选中面板）与 `clientSnapshot` 的图行诊断；`scope: preset` 下不注入段、预设探针的注册/缺失/抛错三态、`llm/stream` 的标记闸门、`point/section` 行在真实服务上的注入；自进化侧的分层判读表、金丝雀、守门、Wilson 区间、8 候选与空变体、变换链回放、store 的提交/回滚/patch、一轮完整 keep 与无模型时 blocked、配置归一化；代码轮侧的研究缓存与失败降级、JSON 提取、路径白名单（`test/`、`package.json`、`..` 全拒）、沙盒在副本里跑测试与语法检查、代码轮 keep/revert、回滚备份往返、revert 也推进轮次；审计回归项：语言占位符插值、空规则选择、分段账本不超出实际载荷、信封裁剪后闭合、普通技术性推脱不算拒绝、reasoning 增量不提前判定、并发手动轮复用同一 promise、发布只 stage 本轮文件、只读 store 不建目录。
 
 ## 回滚
 

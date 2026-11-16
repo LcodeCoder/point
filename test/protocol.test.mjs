@@ -95,3 +95,35 @@ test("section ids are stable and unique", () => {
   assert.ok(SECTION_IDS.includes("review"));
   assert.ok(SECTION_IDS.includes("web"));
 });
+
+test("the language placeholder is interpolated, not emitted literally", async () => {
+  const { buildProtocol: build } = await import("../lib/protocol.js");
+  const text = build({ language: "Simplified Chinese" });
+  assert.match(text, /Simplified Chinese/);
+  assert.doesNotMatch(text, /\{language\}/);
+});
+
+test("an explicit empty rule selection means no rules", async () => {
+  const { selectRules } = await import("../lib/protocol.js");
+  assert.equal(selectRules({ rules: [] }).length, 0);
+  assert.equal(selectRules({ rules: [1, 2] }).length, 2);
+  assert.equal(selectRules({ rules: "all" }).length, 25);
+  assert.equal(selectRules({ rules: "" }).length, 25);
+});
+
+test("the breakdown reports only text the payload actually carries", async () => {
+  const { sectionBreakdown } = await import("../lib/protocol.js");
+  const rows = sectionBreakdown({ maxChars: 3000 });
+  const kept = rows.filter((row) => !row.dropped);
+  const sum = kept.reduce((total, row) => total + row.chars, 0);
+  assert.ok(sum <= 3000, `kept chars ${sum} must not exceed the cap`);
+  assert.ok(rows.some((row) => row.dropped), "some sections are dropped at 3000 chars");
+});
+
+test("a capped envelope keeps both closing tags", async () => {
+  const { renderHeadRaw } = await import("../lib/index.js");
+  const text = renderHeadRaw({ preset: "point", envelope: true, maxChars: 3000 });
+  assert.ok(text.length <= 3000, `length ${text.length}`);
+  assert.match(text, /<\/project_instructions>/);
+  assert.match(text, /<\|im_end\|>$/);
+});

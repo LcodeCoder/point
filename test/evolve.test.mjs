@@ -3,7 +3,7 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, existsSync, readFileSync, readdirSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -13,6 +13,7 @@ import { buildCandidates, applyCandidate, stateChars } from "../lib/evolve/trans
 import { createStore, sha256 } from "../lib/evolve/store.js";
 import { createEvolve, cadenceDelay } from "../lib/evolve/engine.js";
 import { createRunner } from "../lib/evolve/runner.js";
+import { createPublisher } from "../lib/evolve/publish.js";
 import { replayChain, setActiveChain, getActiveChain, renderHead, coerceEvolve } from "../lib/index.js";
 
 const tmp = () => mkdtempSync(join(tmpdir(), "point-evolve-"));
@@ -272,4 +273,68 @@ test("the probe runner sends content blocks and surfaces a terminal error chunk"
   const broken = await failing.run({ level: PROBES[0], target });
   assert.equal(broken.ok, 0);
   assert.match(broken.error, /UNKNOWN: boom/, "a finish(error) chunk is a failure, not an empty answer");
+});
+
+test("a second manual round joins the one already running", async () => {
+  const dir = tmp();
+  let release;
+  const gate = new Promise((resolve) => { release = resolve; });
+  let batches = 0;
+  const runner = {
+    available: () => true,
+    async runBatch({ level, targets }) {
+      batches += 1;
+      if (batches === 1) await gate;
+      const n = targets.length;
+      return { n, ok: n, rate: 1, chars: 100 };
+    },
+  };
+  const engine = createEvolve({
+    config: { enabled: true, rounds: 3, budget: "fast" },
+    store: createStore(dir),
+    runner,
+    publisher: { publishRound: async () => ({ ok: true }) },
+    renderProtocol: () => "【操作层｜基线】执行。",
+    getBaseline: () => "You are a helpful agent.",
+    getIdentity: () => ({}),
+  });
+
+  const first = engine.runRound();
+  await new Promise((done) => setTimeout(done, 20));
+  assert.equal(engine.status().running, true, "a manual round reports running");
+  const second = engine.runRound();
+  release();
+  const [a, b] = await Promise.all([first, second]);
+  assert.equal(b, a, "the second call resolves to the round already in flight");
+  const rows = createStore(dir).ledger();
+  assert.equal(rows.length, 1, "one round, one ledger line");
+  assert.equal(engine.status().running, false);
+});
+
+test("publishing stages only the round's files, never the whole tree", async () => {
+  const dir = tmp();
+  mkdirSync(join(dir, "lib"), { recursive: true });
+  writeFileSync(join(dir, "lib", "a.js"), "export const a = 1;\n", "utf8");
+  const calls = [];
+  const publisher = createPublisher({
+    dir,
+    repo: "https://example.invalid/repo.git",
+    branch: "main",
+    run: async (args) => { calls.push(args.join(" ")); return { ok: true, stdout: "ok", stderr: "" }; },
+  });
+  await publisher.publishRound({ round: 3, track: "code", decision: "keep", title: "tweak", files: [{ path: "lib/a.js" }] });
+  assert.ok(calls.some((line) => line === "add -- lib/a.js"), calls.join(" | "));
+  assert.ok(!calls.some((line) => line.includes("add -A")), "no blanket add");
+  assert.ok(calls.some((line) => line.includes("push -u origin HEAD:main")), "pushes the commit, not a local branch name");
+
+  const empty = await publisher.publishRound({ round: 4, track: "prompt", decision: "revert" });
+  assert.equal(empty.skipped, true);
+  assert.equal(empty.reason, "no-files");
+});
+
+test("a read-only store does not create the state directory", () => {
+  const dir = join(tmp(), "absent");
+  const store = createStore(dir, { readOnly: true });
+  assert.equal(store.ledger().length, 0);
+  assert.equal(existsSync(join(dir, "rounds")), false);
 });

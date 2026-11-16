@@ -190,12 +190,27 @@ window.__ModuleLoader__.load({
     }
 
     function copyText(text, done) {
-      const finish = () => { done() }
+      const fallback = () => {
+        try {
+          const node = document.createElement('textarea')
+          node.value = text
+          node.setAttribute('readonly', '')
+          node.style.position = 'fixed'
+          node.style.opacity = '0'
+          document.body.appendChild(node)
+          node.select()
+          const ok = document.execCommand && document.execCommand('copy')
+          document.body.removeChild(node)
+          done(!!ok)
+        } catch {
+          done(false)
+        }
+      }
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(finish, finish)
+        navigator.clipboard.writeText(text).then(() => done(true), fallback)
         return
       }
-      finish()
+      fallback()
     }
 
     // ----------------------------------------------------------- components
@@ -328,7 +343,8 @@ window.__ModuleLoader__.load({
 
     function modeLabel(data) {
       const m = modeOf(data)
-      if (m.scope === 'global') return data.status.enabled ? '全局注入' : '已停用'
+      const enabled = !!(data.status && data.status.enabled)
+      if (m.scope === 'global') return enabled ? '全局注入' : '已停用'
       if (!m.probe || m.probe.available === false) return '无模式服务'
       if (m.registered === true) return '破甲模式'
       if (m.registered === false) return '预设缺失'
@@ -337,7 +353,8 @@ window.__ModuleLoader__.load({
 
     function modeTone(data) {
       const m = modeOf(data)
-      if (m.scope === 'global') return data.status.enabled ? 'ok' : 'warn'
+      const enabled = !!(data.status && data.status.enabled)
+      if (m.scope === 'global') return enabled ? 'ok' : 'warn'
       if (!m.probe || m.probe.available === false) return 'warn'
       if (m.registered === true) return 'ok'
       if (m.registered === false) return 'bad'
@@ -535,8 +552,9 @@ window.__ModuleLoader__.load({
             h('button', {
               className: 'ptp-btn ptp-primary', type: 'button', disabled: !!busy,
               onClick: () => {
-                onAction('repo', { repo: repoDraft.trim() })
-                setRepoOpen(false)
+                onAction('repo', { repo: repoDraft.trim() }).then((ok) => {
+                  if (ok) setRepoOpen(false)
+                })
               },
             }, '保存'),
             h('button', {
@@ -633,8 +651,10 @@ window.__ModuleLoader__.load({
 
       useEffect(() => {
         let alive = true
+        let inflight = false
         const tick = () => {
-          if (document.hidden) return
+          if (document.hidden || inflight) return
+          inflight = true
           fetchState().then((data) => {
             if (alive) setView({ kind: 'ready', data })
           }).catch((error) => {
@@ -642,32 +662,42 @@ window.__ModuleLoader__.load({
             setView((prev) => (prev.kind === 'ready'
               ? { kind: 'ready', data: prev.data, stale: errText(error) }
               : { kind: 'error', error: errText(error) }))
-          })
+          }).then(() => { inflight = false })
         }
         tick()
         const id = setInterval(tick, POLL_MS)
         return () => { alive = false; clearInterval(id) }
       }, [nonce])
 
+      const toastTimer = React.useRef(null)
+      const showToast = useCallback((message) => {
+        setToast(message)
+        if (toastTimer.current) clearTimeout(toastTimer.current)
+        toastTimer.current = setTimeout(() => setToast(''), 1600)
+      }, [])
+      useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current) }, [])
+
       const onEvolve = useCallback((action, extra) => {
         setBusy(extra && extra.track === 'code' ? `${action}:code` : action)
-        postEvolve(action, extra).then((result) => {
-          setToast(action === 'round' ? '已开跑' : '已执行')
-          if (result && result.error) setToast(`失败：${result.error}`)
+        return postEvolve(action, extra).then((result) => {
+          const failed = !!(result && result.error)
+          showToast(failed ? `失败：${result.error}` : (action === 'round' ? '已开跑' : '已执行'))
+          return !failed
         }).catch((error) => {
-          setToast(`失败：${errText(error)}`)
-        }).then(() => {
+          showToast(`失败：${errText(error)}`)
+          return false
+        }).then((ok) => {
           setBusy('')
           setNonce((n) => n + 1)
+          return ok
         })
-      }, [])
+      }, [showToast])
 
       const onCopy = useCallback((text) => {
-        copyText(String(text || ''), () => {
-          setToast('已复制')
-          setTimeout(() => setToast(''), 1400)
+        copyText(String(text || ''), (ok) => {
+          showToast(ok ? '已复制' : '复制失败')
         })
-      }, [])
+      }, [showToast])
 
       const data = view.kind === 'ready' ? view.data : null
 

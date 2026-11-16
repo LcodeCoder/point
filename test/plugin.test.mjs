@@ -1,4 +1,5 @@
 import { test } from "node:test";
+import { EventEmitter } from "node:events";
 import assert from "node:assert/strict";
 
 import plugin, { apply, renderHead, renderTail, buildState, clientSnapshot, createPresetProbe, DEFAULTS } from "../lib/index.js";
@@ -207,6 +208,56 @@ test("the status route answers 405 for a write and no body for HEAD", () => {
   assert.equal(head.code, 200);
   assert.equal(head.body, "");
   assert.equal(head.headers["cache-control"], "no-store");
+});
+
+test("the evolve route rejects malformed bodies instead of pretending to act", async () => {
+  const routes = [];
+  const ctx = {
+    systemPrompt: { section: () => () => {} },
+    effect(fn) { return fn(); },
+    on() {},
+    inject(_deps, callback) {
+      callback({
+        effect: (fn) => fn(),
+        webServer: { register(route) { routes.push(route); return () => {}; } },
+      });
+    },
+  };
+  apply(ctx, {});
+  const route = routes.find((row) => row.path === "/point/evolve");
+
+  const call = async (method, body) => {
+    const req = new EventEmitter();
+    req.method = method;
+    const res = { code: 0, body: "", writeHead(code) { this.code = code; }, end(chunk) { if (chunk) this.body += chunk; } };
+    const done = route.handler(req, res);
+    process.nextTick(() => {
+      if (body) req.emit("data", Buffer.from(body));
+      req.emit("end");
+    });
+    await done;
+    return res;
+  };
+
+  const bad = await call("POST", "{oops");
+  assert.equal(bad.code, 400);
+  assert.match(bad.body, /invalid JSON/);
+
+  const array = await call("POST", "[1,2]");
+  assert.equal(array.code, 400);
+  assert.match(array.body, /JSON object/);
+
+  const missing = await call("POST", "{}");
+  assert.equal(missing.code, 400);
+  assert.match(missing.body, /missing action/);
+
+  const unknown = await call("POST", JSON.stringify({ action: "nope" }));
+  assert.equal(unknown.code, 400);
+  assert.match(unknown.body, /unknown action/);
+
+  const get = await call("GET", null);
+  assert.equal(get.code, 200);
+  assert.equal(typeof JSON.parse(get.body), "object", "GET returns the snapshot itself");
 });
 
 function fakeHost(extra = {}) {

@@ -29,6 +29,9 @@ function makeReact(overrides = []) {
       return [next(typeof init === "function" ? init() : init), () => {}];
     },
     useEffect() {},
+    useRef(init) {
+      return { current: init === undefined ? null : init };
+    },
     useMemo(fn) {
       return fn();
     },
