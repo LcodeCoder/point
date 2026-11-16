@@ -87,7 +87,7 @@ test("the bundle patch ships the self-evolution switch, off by default", () => {
   assert.match(row, /evolve:\n\s+enabled: false/);
   assert.match(row, /tracks: \[prompt, code\]/);
   assert.match(row, /research: true/);
-  assert.match(row, /repo: https:\/\/github\.com\/LcodeCoder\/point\.git/);
+  assert.match(row, /repo: ""/, "no repository is baked in: the operator names their own");
   assert.match(row, /rounds: 6/);
   assert.match(row, /push: true/);
   assert.match(row, /budget: fast/);

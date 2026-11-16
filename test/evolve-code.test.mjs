@@ -42,6 +42,25 @@ test("research caches a brief and renders it for the proposer", async () => {
   assert.match(research.notes()[0].text, /prompt firewall/);
 });
 
+test("a publisher without a repository skips git entirely", async () => {
+  const calls = [];
+  const publisher = createPublisher({
+    dir: "/tmp/point-no-repo",
+    repo: "",
+    branch: "main",
+    run: async (args) => {
+      calls.push(args.join(" "));
+      return { ok: true, stdout: "", stderr: "" };
+    },
+  });
+  const ensured = await publisher.ensure();
+  assert.equal(ensured.ok, false);
+  assert.equal(ensured.reason, "no-repo");
+  const published = await publisher.publishRound({ round: 1, decision: "keep", track: "code", title: "x" });
+  assert.equal(published.skipped, true);
+  assert.equal(calls.length, 0, "no git command runs without a repository");
+});
+
 test("research reports a failed lookup instead of throwing", async () => {
   const research = createResearch({ fetchImpl: async () => ({ ok: false, status: 403 }) });
   const briefing = await research.brief("round-2", ["x"]);

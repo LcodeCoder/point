@@ -97,7 +97,7 @@ point, deployment:persona-prefix, deployment:persona-suffix, point:tail
       enabled: false
       budget: fast       # fast | full（v2 的 N=100）
       rounds: 6
-      repo: https://github.com/LcodeCoder/point.git
+      repo: ""            # 空 = 不推送；面板「GitHub 仓库」里填你自己的
       branch: main
       push: true
       dryRun: false
@@ -209,7 +209,7 @@ git commit -m "evolve round 3: A4 返回包装 keep 17%→50%"
 git push -u origin main
 ```
 
-仓库地址就是配置里的 `evolve.repo`（默认 `https://github.com/LcodeCoder/point.git`），分支 `evolve.branch`。首次运行会 `git init -b main` 并加 `origin`。`dryRun: true` 只写 patch 和台账，不碰 git。推送失败只记在那一轮的 `publish` 字段里，不会中断循环。
+仓库地址默认是**空的**——不填就不推送，本地改动照常生效。填法有两种：面板「自进化 → GitHub 仓库」按钮（存在状态目录，优先级更高，随时可换），或配置里的 `evolve.repo`。分支 `evolve.branch`（默认 `main`）。首次推送会 `git init -b main` 并加 `origin`。`dryRun: true` 只写 patch 和台账，不碰 git。推送失败只记在那一轮的 `publish` 字段里，不会中断循环。
 
 认证走本机 git 的 credential helper / SSH key；HTTPS 首次推送需要先 `git credential` 或换成 SSH 地址。
 
@@ -220,6 +220,7 @@ git push -u origin main
 ```
 active.json          当前保留的变换链 + 上一轮快照（回滚锚点）
 （仓库根）chain.json  保留链的镜像，跟着那一轮的提交一起推送；换机器克隆后按它恢复
+（状态目录）state.json  面板的仓库地址与开关状态（覆盖配置，不改 profile 文件）
 ledger.jsonl         每轮一条，字段与 v2 §9 的严格 JSON 对齐
 state.json           phase / round / armed
 rounds/round-N.json  完整轮次记录
@@ -232,7 +233,7 @@ research/round-N.md  该轮检索到的参考项目
 
 ### 面板与接口
 
-「自进化」页：开关、轮次、阶段、轨道、保留数、上一轮（提示词轮看端到端，代码轮看改了什么文件、测试通过多少）、台账、仓库与模型状态，四个按钮（开启/关闭、跑一轮、回滚上一轮、同步仓库）。
+「自进化」页：开关、轮次、阶段、轨道、保留数、上一轮（提示词轮看端到端，代码轮看改了什么文件、测试通过多少）、台账、仓库与模型状态，五个按钮（开启/关闭、跑一轮、跑代码轮、回滚上一轮、GitHub 仓库/同步仓库）。
 
 ```bash
 curl -s http://127.0.0.1:PORT/point/state | jq .evolve     # 只读快照

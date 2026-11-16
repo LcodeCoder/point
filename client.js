@@ -145,6 +145,8 @@ window.__ModuleLoader__.load({
 .ptp-rule span { color: var(--dsw-alias-label-secondary); overflow: hidden;
   text-overflow: ellipsis; white-space: nowrap; }
 .ptp-actions { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0 4px; }
+.ptp-repo { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 10px; }
+.ptp-input { flex: 1 1 320px; min-width: 220px; padding: 7px 10px; border-radius: var(--dsw-radius-sm); border: 1px solid var(--dsw-alias-border-l2); background: var(--dsw-alias-bg-base); color: var(--dsw-alias-label-primary); font-family: var(--dsw-font-family); font-size: 12px; }
 .ptp-primary { border-color: transparent; background: var(--dsw-alias-state-business-primary); color: #fff; }
 .ptp-primary:hover { filter: brightness(1.06); }
 .ptp-btn[disabled] { opacity: 0.55; cursor: default; }
@@ -468,6 +470,8 @@ window.__ModuleLoader__.load({
 
     function Evolve({ data, busy, onAction }) {
       const ev = data.evolve || { available: false, stale: true }
+      const [repoOpen, setRepoOpen] = useState(false)
+      const [repoDraft, setRepoDraft] = useState('')
       if (!ev.available) {
         return h('div', { className: 'ptp-empty' },
           h('b', null, ev.stale ? 'Host 半是旧版本' : '自进化未就绪'),
@@ -508,9 +512,39 @@ window.__ModuleLoader__.load({
             onClick: () => onAction('rollback'),
           }, '回滚上一轮'),
           h('button', {
-            className: 'ptp-btn', type: 'button', disabled: !!busy,
+            className: 'ptp-btn', type: 'button', disabled: !!busy || !ev.repo,
             onClick: () => onAction('publish'),
-          }, '同步仓库')),
+          }, '同步仓库'),
+          h('button', {
+            className: 'ptp-btn', type: 'button', disabled: !!busy,
+            onClick: () => {
+              setRepoDraft(ev.repo || '')
+              setRepoOpen(!repoOpen)
+            },
+          }, repoOpen ? '收起仓库设置' : 'GitHub 仓库')),
+        repoOpen
+          ? h('div', { className: 'ptp-repo' },
+            h('input', {
+              className: 'ptp-input',
+              value: repoDraft,
+              placeholder: 'https://github.com/<you>/<repo>.git',
+              onChange: (event) => setRepoDraft(event.target.value),
+            }),
+            h('button', {
+              className: 'ptp-btn ptp-primary', type: 'button', disabled: !!busy,
+              onClick: () => {
+                onAction('repo', { repo: repoDraft.trim() })
+                setRepoOpen(false)
+              },
+            }, '保存'),
+            h('button', {
+              className: 'ptp-btn', type: 'button', disabled: !!busy,
+              onClick: () => {
+                onAction('repo', { repo: '' })
+                setRepoOpen(false)
+              },
+            }, '清除'))
+          : null,
         h('div', { className: 'ptp-list' },
           h(Row, {
             label: '配置默认',
@@ -532,7 +566,11 @@ window.__ModuleLoader__.load({
             value: ev.idleOnly ? `是 · 静默 ${fmtIdle(ev.idleMs)}` : '否 · 一直跑',
             tone: ev.idleOnly ? 'ok' : 'warn',
           }),
-          h(Row, { label: '仓库', value: ev.repo || '未配置' }),
+          h(Row, {
+            label: '仓库',
+            value: ev.repo ? `${ev.repo}${ev.repoSource === 'panel' ? ' · 面板设置' : ''}` : '未配置 · 点上方「GitHub 仓库」填',
+            tone: ev.repo ? 'ok' : 'warn',
+          }),
           h(Row, { label: '分支 / 推送', value: `${ev.branch || 'main'} · ${ev.push ? 'push' : '仅本地'}` }),
           h(Row, {
             label: '模型',

@@ -40,13 +40,15 @@
         # Self-evolution. Off by default: the loop spends model calls and pushes
         # commits, so an install never starts it on its own. Flip `enabled` here
         # (or use the panel switch, which persists in the state directory), and
-        # each kept round is committed and pushed to `repo`.
+        # each kept round is committed and pushed to `repo` when one is set.
+        # `repo` is empty on purpose: fill it from the panel (GitHub 仓库) or here.
+        # Nothing is pushed until a repository you own is named.
         evolve:
           enabled: false
           autoStart: true        # start a loop on boot once enabled + armed
           budget: fast           # fast (small sample) | full (v2 N=100)
           rounds: 6
-          repo: https://github.com/LcodeCoder/point.git
+          repo: ""               # empty = no push; set your own repository here or in the panel
           branch: main
           push: true
           dryRun: false
