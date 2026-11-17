@@ -255,3 +255,10 @@ test("a proposal cannot silently drop an export", () => {
   const kept = validateProposal({ files: [{ path: "lib/x.js", content: `${before}export const extra = 2;\n` }] }, { workspace, readFile: read });
   assert.equal(kept.ok, true);
 });
+
+test("a rollback deletes files the round created instead of blanking them", () => {
+  const store = tempStore();
+  store.writeCode(3, [{ path: "lib/new.js", before: null, after: "export const x = 1;\n" }]);
+  const restored = store.restoreCode(3);
+  assert.deepEqual(restored, [{ path: "lib/new.js", content: null, remove: true }]);
+});

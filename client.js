@@ -84,7 +84,7 @@ window.__ModuleLoader__.load({
 .ptp-body > * { width: 100%; max-width: 940px; flex: none; }
 .ptp-body > .ptp-tabs { width: auto; align-self: flex-start; }
 .ptp-wrap { max-width: 940px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
-.ptp-hero { display: grid; grid-template-columns: 1.4fr 1fr 1fr;
+.ptp-hero { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   border: 1px solid var(--dsw-alias-border-l1); border-radius: 14px; overflow: hidden;
   background: linear-gradient(135deg, var(--dsw-alias-bg-layer-2), var(--dsw-alias-bg-layer-1) 62%); }
 .ptp-hero > div { padding: 18px 20px; min-width: 0; }
@@ -201,7 +201,9 @@ window.__ModuleLoader__.load({
 .ptp-hist .ptp-what { flex: 1; color: var(--dsw-alias-label-secondary); overflow: hidden;
   text-overflow: ellipsis; white-space: nowrap; }
 .ptp-note { font-size: 12px; line-height: 1.75; color: var(--dsw-alias-label-caption); }
-.ptp-toast { font-size: 11.5px; color: var(--dsw-alias-state-success-primary); }
+.ptp-toast { font-size: 11.5px; color: var(--dsw-alias-state-success-primary);
+  max-width: 38ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ptp-toast[data-tone="bad"] { color: var(--dsw-alias-state-error-primary); }
 `
 
     // --------------------------------------------------------------- helpers
@@ -212,18 +214,58 @@ window.__ModuleLoader__.load({
       if (!ts) return '—'
       const d = new Date(ts)
       const p = (n) => String(n).padStart(2, '0')
-      return `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`
+      const now = new Date()
+      const sameDay = d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()
+        && d.getDate() === now.getDate()
+      const time = `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`
+      return sameDay ? time : `${p(d.getMonth() + 1)}-${p(d.getDate())} ${time}`
     }
 
     const errText = (error) => String((error && error.message) || error || 'unknown')
 
+    const show = (value) => (value === undefined || value === null ? '—' : value)
+
+    const asArray = (value) => (Array.isArray(value) ? value : [])
+
+    /** Fill every field the panel dereferences, so an older Host cannot crash the render. */
+    function normalizeState(raw) {
+      const data = raw && typeof raw === 'object' ? raw : {}
+      const status = data.status && typeof data.status === 'object' ? data.status : {}
+      return Object.assign({}, data, {
+        ok: true,
+        plugin: Object.assign({ name: 'point', version: '—', pid: '—' }, data.plugin),
+        status: Object.assign({ enabled: false, scope: 'preset' }, status),
+        config: Object.assign({
+          preset: 'point', mode: 'full', position: 'head', tailMode: 'anchor', order: '—',
+          tailOrder: '—', envelope: false, maxChars: 0, identity: '—', operator: '—',
+          language: '—', openingTag: '—', rules: 'all', includeIntentMap: false,
+          includeCanned: false, includeWebRouting: false, retryRefusal: true,
+        }, data.config),
+        head: Object.assign({ chars: 0, lines: 0, text: '' }, data.head),
+        tail: Object.assign({ chars: 0, lines: 0, text: '' }, data.tail),
+        sections: asArray(data.sections),
+        modes: asArray(data.modes),
+        rules: Object.assign({ active: 0, total: 0, rows: [] }, data.rules),
+        lint: Object.assign({ ok: true, hits: [] }, data.lint),
+        evidence: Object.assign({ count: 0, scopes: 0, last: null, rows: [] }, data.evidence),
+        telemetry: Object.assign({ hits: 0, retry: {} }, data.telemetry),
+      })
+    }
+
     async function fetchState() {
       const url = new URL('point/state', document.baseURI)
-      const res = await fetch(url, { cache: 'no-store', headers: { accept: 'application/json' } })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const data = await res.json()
+      const options = { cache: 'no-store', headers: { accept: 'application/json' } }
+      if (typeof AbortSignal !== 'undefined' && AbortSignal.timeout) options.signal = AbortSignal.timeout(8000)
+      const res = await fetch(url, options)
+      const data = await res.json().catch(() => null)
+      if (!res.ok) {
+        const detail = data && (data.error || data.message)
+        const error = new Error(detail || `HTTP ${res.status}`)
+        error.status = res.status
+        throw error
+      }
       if (!data || data.ok !== true) throw new Error('unexpected payload')
-      return data
+      return normalizeState(data)
     }
 
     async function postEvolve(action, extra) {
@@ -240,24 +282,30 @@ window.__ModuleLoader__.load({
     }
 
     function copyText(text, done) {
+      const value = String(text || '')
+      if (!value) { done(false); return }
       const fallback = () => {
+        const active = document.activeElement
+        let node = null
         try {
-          const node = document.createElement('textarea')
-          node.value = text
+          node = document.createElement('textarea')
+          node.value = value
           node.setAttribute('readonly', '')
           node.style.position = 'fixed'
           node.style.opacity = '0'
           document.body.appendChild(node)
           node.select()
           const ok = document.execCommand && document.execCommand('copy')
-          document.body.removeChild(node)
           done(!!ok)
         } catch {
           done(false)
+        } finally {
+          if (node && node.parentNode) node.parentNode.removeChild(node)
+          if (active && typeof active.focus === 'function') active.focus()
         }
       }
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(() => done(true), fallback)
+        navigator.clipboard.writeText(value).then(() => done(true), fallback)
         return
       }
       fallback()
@@ -286,9 +334,10 @@ window.__ModuleLoader__.load({
     }
 
     function Row({ label, value, tone }) {
+      const text = value === undefined || value === null ? '—' : String(value)
       return h('div', { className: 'ptp-row', 'data-tone': tone || null },
         h('b', null, label),
-        h('i', null, value))
+        h('i', { title: text }, text))
     }
 
     function SectionTitle({ title, note, right }) {
@@ -396,6 +445,7 @@ window.__ModuleLoader__.load({
       idle: '空闲', attribution: '定层', canary: '金丝雀', small: '小样本', full: '全量',
       sealed: '密封', guard: '回归', decide: '判定', research: '检索', propose: '提案',
       sandbox: '沙盒', audit: '自检', publish: '推送', done: '完成', blocked: '受阻', error: '出错',
+      stopped: '已停止',
     }
     function phaseLabel(id) { return PHASES[id] || id || '空闲' }
 
@@ -428,7 +478,8 @@ window.__ModuleLoader__.load({
             title: '头段 point',
             note: `${fmt(data.head.chars)} 字符 · ${fmt(data.head.lines)} 行 · order ${data.config.order}`,
             right: h('button', {
-              className: 'ptp-btn', type: 'button', onClick: () => onCopy(data.head.text),
+              className: 'ptp-btn', type: 'button', disabled: headEmpty,
+              onClick: () => onCopy(data.head.text),
             }, '复制'),
           }),
           h('pre', { className: 'ptp-pre', 'data-empty': String(headEmpty) },
@@ -438,7 +489,8 @@ window.__ModuleLoader__.load({
             title: '尾锚 point:tail',
             note: `${fmt(data.tail.chars)} 字符 · order ${data.config.tailOrder}`,
             right: h('button', {
-              className: 'ptp-btn', type: 'button', onClick: () => onCopy(data.tail.text),
+              className: 'ptp-btn', type: 'button', disabled: tailEmpty,
+              onClick: () => onCopy(data.tail.text),
             }, '复制'),
           }),
           h('pre', { className: 'ptp-pre', 'data-empty': String(tailEmpty) },
@@ -543,10 +595,8 @@ window.__ModuleLoader__.load({
     const trackLabel = (tracks) => (Array.isArray(tracks) && tracks.length ? tracks : ['prompt'])
       .map((id) => (id === 'code' ? '代码' : '提示词')).join(' → ')
 
-    function Evolve({ data, busy, onAction }) {
+    function Evolve({ data, busy, onAction, repoOpen, repoDraft, setRepoOpen, setRepoDraft }) {
       const ev = data.evolve || { available: false, stale: true }
-      const [repoOpen, setRepoOpen] = useState(false)
-      const [repoDraft, setRepoDraft] = useState('')
       if (!ev.available) {
         return h('div', { className: 'ptp-empty' },
           h('b', null, ev.stale ? 'Host 半是旧版本' : '自进化未就绪'),
@@ -561,10 +611,10 @@ window.__ModuleLoader__.load({
       return h(React.Fragment, null,
         ev.running ? h('div', { className: 'ptp-banner' },
           h('i', { className: 'ptp-dot' }),
-          `正在跑第 ${ev.round + 1} 轮 · 阶段 ${phaseLabel(ev.phase)} · 一轮要几十到几百次模型调用，跑完会出现在台账里`) : null,
+          `正在跑第 ${Number(ev.round || 0) + 1} 轮 · 阶段 ${phaseLabel(ev.phase)} · 一轮要几十到几百次模型调用，跑完会出现在台账里`) : null,
         h('div', { className: 'ptp-cards' },
           h(Card, { label: '开关', value: ev.armed ? '已开启' : '已关闭' }),
-          h(Card, { label: '轮次', value: `${ev.round}`, unit: `/ ${ev.maxRounds}` }),
+          h(Card, { label: '轮次', value: show(ev.round), unit: ev.maxRounds ? `/ ${ev.maxRounds}` : '' }),
           h(Card, { label: '阶段', value: phaseLabel(ev.phase) }),
           h(Card, { label: '轨道', value: trackLabel(ev.tracks) }),
           h(Card, { label: '保留', value: `${ev.kept}`, unit: `/ ${ev.ledger} 轮` })),
@@ -604,6 +654,7 @@ window.__ModuleLoader__.load({
           ? h('div', { className: 'ptp-repo' },
             h('input', {
               className: 'ptp-input',
+              'aria-label': 'GitHub 仓库地址',
               value: repoDraft,
               placeholder: 'https://github.com/<you>/<repo>.git',
               onChange: (event) => setRepoDraft(event.target.value),
@@ -721,12 +772,42 @@ window.__ModuleLoader__.load({
           }))) : null)
     }
 
+    const REASONS = {
+      running: '已经在跑',
+      'no-backup': '没有可回滚的代码轮备份',
+      'no-repo': '还没配置仓库',
+      'no-files': '本轮没有文件改动',
+      'no-model': '没有可用的模型',
+      'not-armed': '先点「开启自动迭代」',
+    }
+
+    const reasonText = (reason, fallback) => REASONS[reason] || (reason ? String(reason) : fallback)
+
+    /** Decide whether an action actually did anything, and what to tell the operator. */
+    function outcomeOf(action, result) {
+      if (!result) return { ok: false, text: '没有返回结果' }
+      if (result.error) return { ok: false, text: String(result.error) }
+      if (result.started === false) return { ok: false, text: reasonText(result.reason, '没有开跑') }
+      if (result.restored === 0) return { ok: false, text: reasonText(result.reason, '没有可回滚的备份') }
+      if (result.skipped === true) return { ok: false, text: reasonText(result.reason, '已跳过') }
+      if (result.ok === false) return { ok: false, text: reasonText(result.reason, '没有执行') }
+      if (action === 'round') return { ok: true, text: `已开跑 · 第 ${result.round || '?'} 轮` }
+      if (action === 'start') return { ok: true, text: '已开启自动迭代' }
+      if (action === 'stop') return { ok: true, text: '已停止' }
+      if (action === 'rollback') return { ok: true, text: `已回滚第 ${result.round || '?'} 轮` }
+      if (action === 'publish') return { ok: true, text: result.commit ? `已推送 ${String(result.commit).slice(0, 7)}` : '已同步' }
+      if (action === 'repo') return { ok: true, text: result.repo ? '仓库已保存' : '仓库已清除' }
+      return { ok: true, text: '已执行' }
+    }
+
     function PointPanel() {
       const [tab, setTab] = useState('overview')
       const [view, setView] = useState({ kind: 'loading' })
       const [nonce, setNonce] = useState(0)
-      const [toast, setToast] = useState('')
+      const [toast, setToast] = useState(null)
       const [busy, setBusy] = useState('')
+      const [repoOpen, setRepoOpen] = useState(false)
+      const [repoDraft, setRepoDraft] = useState('')
 
       useEffect(() => {
         let alive = true
@@ -740,30 +821,37 @@ window.__ModuleLoader__.load({
             if (!alive) return
             setView((prev) => (prev.kind === 'ready'
               ? { kind: 'ready', data: prev.data, stale: errText(error) }
-              : { kind: 'error', error: errText(error) }))
-          }).then(() => { inflight = false })
+              : { kind: 'error', error: errText(error), status: error && error.status }))
+          }).finally(() => { inflight = false })
         }
         tick()
         const id = setInterval(tick, POLL_MS)
-        return () => { alive = false; clearInterval(id) }
+        const wake = () => { if (!document.hidden) tick() }
+        document.addEventListener('visibilitychange', wake)
+        return () => {
+          alive = false
+          clearInterval(id)
+          document.removeEventListener('visibilitychange', wake)
+        }
       }, [nonce])
 
       const toastTimer = React.useRef(null)
-      const showToast = useCallback((message) => {
-        setToast(message)
+      const showToast = useCallback((message, tone) => {
+        const bad = tone === 'bad'
+        setToast({ text: String(message), tone: bad ? 'bad' : 'ok' })
         if (toastTimer.current) clearTimeout(toastTimer.current)
-        toastTimer.current = setTimeout(() => setToast(''), 1600)
+        toastTimer.current = setTimeout(() => setToast(null), bad ? 6000 : 1800)
       }, [])
       useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current) }, [])
 
       const onEvolve = useCallback((action, extra) => {
         setBusy(extra && extra.track === 'code' ? `${action}:code` : action)
         return postEvolve(action, extra).then((result) => {
-          const failed = !!(result && result.error)
-          showToast(failed ? `失败：${result.error}` : (action === 'round' ? '已开跑' : '已执行'))
-          return !failed
+          const outcome = outcomeOf(action, result)
+          showToast(outcome.text, outcome.ok ? 'ok' : 'bad')
+          return outcome.ok
         }).catch((error) => {
-          showToast(`失败：${errText(error)}`)
+          showToast(`失败：${errText(error)}`, 'bad')
           return false
         }).then((ok) => {
           setBusy('')
@@ -798,7 +886,10 @@ window.__ModuleLoader__.load({
             h('div', { className: 'ptp-title' }, 'point · 破甲协议'),
             h('div', { className: 'ptp-sub' }, '系统提示注入 · 内容与成果')),
           h('div', { className: 'ptp-spacer' }),
-          toast ? h('span', { className: 'ptp-toast' }, toast) : null,
+          toast ? h('span', {
+            className: 'ptp-toast', 'data-tone': toast.tone, title: toast.text,
+            role: 'status', 'aria-live': 'polite',
+          }, toast.text) : null,
           h('span', { className: 'ptp-pill', 'data-tone': tone },
             h('i', { className: 'ptp-dot' }), pill),
           h('button', {
@@ -810,12 +901,12 @@ window.__ModuleLoader__.load({
             : null,
           view.kind === 'error'
             ? h('div', { className: 'ptp-empty' },
-              h('b', null, 'Host 半未激活'),
+              h('b', null, view.status && view.status >= 500 ? 'Host 报错' : 'Host 半未激活'),
               `请求 /point/state 失败：${view.error}`,
               h('br'),
-              '面板是只读的浏览器半边；数据由插件 Host 半边经 ctx.webServer 提供。',
-              h('br'),
-              '重启 dsh（或在 设置 → 插件 里重启 point）后这条路由才会出现。')
+              !(view.status && view.status >= 500)
+                ? '面板是只读的浏览器半边；数据由插件 Host 半边经 ctx.webServer 提供。重启 dsh（或在 设置 → 插件 里重启 point）后这条路由才会出现。'
+                : 'Host 还在，但这一次快照抛错了。面板每 4 秒重试，也可以点右上角刷新。')
             : null,
           data
             ? h(React.Fragment, null,
@@ -838,14 +929,18 @@ window.__ModuleLoader__.load({
                   h('div', { className: 'ptp-hvalue' }, fmt(data.evidence.count), h('small', null, '次')),
                   h('div', { className: 'ptp-hint' },
                     data.evidence.last ? `最近 ${clock(data.evidence.last)}` : '等待下一次装配'))),
-              h('div', { className: 'ptp-tabs' }, TABS.map(([id, label]) => h('button', {
+              h('div', { className: 'ptp-tabs', role: 'tablist', 'aria-label': '面板页签' }, TABS.map(([id, label]) => h('button', {
                 key: id, type: 'button', className: 'ptp-tab', 'data-active': String(tab === id),
+                role: 'tab', 'aria-selected': String(tab === id),
                 onClick: () => setTab(id),
               }, label))),
               tab === 'overview' ? h(Overview, { data }) : null,
               tab === 'content' ? h(Content, { data, onCopy }) : null,
               tab === 'results' ? h(Results, { data, onCopy }) : null,
-              tab === 'evolve' ? h(Evolve, { data, busy, onAction: onEvolve }) : null,
+              tab === 'evolve' ? h(Evolve, {
+                data, busy, onAction: onEvolve,
+                repoOpen, repoDraft, setRepoOpen, setRepoDraft,
+              }) : null,
               tab === 'rules' ? h(Rules, { data }) : null)
             : null))
     }

@@ -385,3 +385,59 @@ test("point/section is a self-contained cordis row", () => {
   sectionRow.apply(off, { enabled: false });
   assert.equal(off.sections.length, 0);
 });
+
+test("the evolve route refuses cross-origin actions and unknown hosts", async () => {
+  const routes = [];
+  const ctx = {
+    sections: [],
+    systemPrompt: { section(section) { this.sections.push(section); return () => {}; } },
+    effect(fn) { return fn(); },
+    on() {},
+    inject(_deps, callback) {
+      callback({
+        effect: (fn) => fn(),
+        webServer: { register(route) { routes.push(route); return () => {}; } },
+      });
+    },
+  };
+  apply(ctx, { enabled: false });
+  const route = routes.find((row) => row.path === "/point/evolve");
+  const call = async (headers, body = "{\"action\":\"stop\"}") => {
+    const res = { code: 0, body: "", writeHead(code) { this.code = code; }, end(chunk) { if (chunk) this.body += chunk; } };
+    const req = Object.assign(new EventEmitter(), { method: "POST", headers });
+    const done = route.handler(req, res);
+    req.emit("data", Buffer.from(body));
+    req.emit("end");
+    await done;
+    return res;
+  };
+
+  const evil = await call({ host: "127.0.0.1:64760", origin: "http://evil.example" });
+  assert.equal(evil.code, 403);
+
+  const site = await call({ host: "127.0.0.1:64760", "sec-fetch-site": "cross-site" });
+  assert.equal(site.code, 403);
+
+  const plain = await call({ host: "127.0.0.1:64760", "content-type": "text/plain" });
+  assert.equal(plain.code, 415);
+
+  const rebound = { code: 0, body: "", writeHead(code) { this.code = code; }, end(chunk) { if (chunk) this.body += chunk; } };
+  route.handler({ method: "GET", headers: { host: "attacker.example" } }, rebound);
+  assert.equal(rebound.code, 403);
+
+  const local = { code: 0, body: "", writeHead(code) { this.code = code; }, end(chunk) { if (chunk) this.body += chunk; } };
+  route.handler({ method: "GET", headers: { host: "127.0.0.1:64760" } }, local);
+  assert.equal(local.code, 200);
+});
+
+test("a misspelt mode falls back to full instead of injecting the largest payload", () => {
+  const snapshot = apply(fakeHost(), { enabled: false, mode: "minmal" })();
+  assert.equal(snapshot.config.mode, "full");
+});
+
+test("the envelope reserve is the real overhead, not a guess", () => {
+  const capped = renderHead({ maxChars: 300, envelope: true });
+  assert.ok(capped.length <= 300, `got ${capped.length}`);
+  assert.ok(capped.startsWith("<|im_start|>system"), "the envelope stays closed");
+  assert.ok(capped.trimEnd().endsWith("<|im_end|>"));
+});

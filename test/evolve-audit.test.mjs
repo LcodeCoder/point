@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -118,4 +118,17 @@ test("a prompt round is reverted when the payload scan fails", async () => {
   assert.equal(record.decision, "revert");
   assert.equal(record.audit.high, 1);
   assert.equal(store.active().chain.length, 0);
+});
+
+test("the audit reads the whole tree and only narrows the report", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "point-audit-tree-"));
+  mkdirSync(join(dir, "lib"), { recursive: true });
+  writeFileSync(join(dir, "lib", "clean.js"), "export const a = 1;\n");
+  writeFileSync(join(dir, "lib", "dirty.js"), 'export const root = "/Volumes/new/point";\n');
+  const narrow = auditWorkspace({ workspace: dir, files: ["lib/clean.js"] });
+  assert.equal(narrow.ok, true, "the clean file has no findings of its own");
+  assert.ok(narrow.scanned.includes("lib/dirty.js"), "the dirty file was still read");
+  const wide = auditWorkspace({ workspace: dir, files: ["lib/dirty.js"] });
+  assert.equal(wide.ok, false);
+  assert.equal(wide.findings[0].rule, "hardcoded-home");
 });

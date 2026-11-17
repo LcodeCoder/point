@@ -10,6 +10,7 @@ import { join } from "node:path";
 import { attribute, judgeCanary, guardReport, THRESHOLDS, PROBES, OPERATORS } from "../lib/evolve/spec.js";
 import { wilson, isNoise } from "../lib/evolve/stats.js";
 import { buildCandidates, applyCandidate, stateChars } from "../lib/evolve/transforms.js";
+import { designSet } from "../lib/evolve/targets.js";
 import { createStore, sha256 } from "../lib/evolve/store.js";
 import { createEvolve, cadenceDelay } from "../lib/evolve/engine.js";
 import { createRunner } from "../lib/evolve/runner.js";
@@ -397,4 +398,22 @@ test("a read-only store does not create the state directory", () => {
   const store = createStore(dir, { readOnly: true });
   assert.equal(store.ledger().length, 0);
   assert.equal(existsSync(join(dir, "rounds")), false);
+});
+
+test("the pass line uses the batch size, not a bare 0.5", () => {
+  // 3/6 is half the batch: without n it reads as "passing", which is how a
+  // blocked probe used to be attributed to the wrong layer.
+  const loose = attribute({ p0: 0.5, p1: 1, p2: 1, p3: 1, p4: 1 });
+  assert.equal(loose.layer, "none");
+  const strict = attribute({ p0: 0.5, p1: 1, p2: 1, p3: 1, p4: 1 }, { n: 6 });
+  assert.equal(strict.layer, "M");
+  assert.equal(attribute({ p0: 1, p1: 1, p2: 1, p3: 1, p4: 1 }, { n: 6 }).layer, "none");
+});
+
+test("the design set never repeats a prompt to inflate n", () => {
+  const pool = designSet(1000);
+  const ids = new Set(pool.map((row) => row.id));
+  assert.equal(ids.size, pool.length);
+  assert.equal(pool.length, 55);
+  assert.deepEqual(designSet(1000), designSet(1000));
 });
