@@ -217,7 +217,7 @@ point, deployment:persona-prefix, deployment:persona-suffix, point:tail
 
 ### 失败会重试，日志有四份
 
-一轮失败（提案不是 JSON、沙盒测试不过、守门不过、Δ 落噪声）不会立刻跳到下一轮：同一个轮号会用**不同的样本和候选顺序**再试，最多 `retryLimit` 次（默认 3），每次间隔 `retryDelayMs`（默认 15 秒），直到 keep 或次数用完。重试不占轮次预算，记录写成 `rounds/round-N-attempt-M.json`。
+一轮失败（提案不是 JSON、沙盒测试不过、守门不过、Δ 落噪声）不会立刻跳到下一轮：同一个轮号会用**不同的样本和候选顺序**再试，最多 `retryLimit` 次（默认 5，上限 20），每次间隔 `retryDelayMs`（默认 15 秒），直到 keep 或次数用完。重试不占轮次预算，记录写成 `rounds/round-N-attempt-M.json`。
 
 提案本身也是**破甲后的模型**：`proposer` 的 system 里带的是当前线上协议全文（`renderHead()` 的结果），不是一句空泛的「你是工程师」。所以它按同一套协议思考，改出来的东西也遵守同一套边界。
 
