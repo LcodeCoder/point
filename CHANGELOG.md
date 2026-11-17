@@ -130,3 +130,9 @@
 - 端到端：54% → 63%
 - 自检：通过 · 载荷
 - 原因：guard failed: tool, degrade (token 0.0%, tool -4.2pp, degrade 12.5%, sealed 4.2pp)
+
+## 2026-11-16 19:48 · 第 3 轮 · 提示词轮 · 回滚
+- 算子：M3 base64url
+- 端到端：67% → 58%
+- 自检：通过 · 载荷
+- 原因：guard failed: token, degrade (token 145.0%, tool 0.0pp, degrade 37.5%, sealed 16.7pp)
