@@ -636,8 +636,8 @@ window.__ModuleLoader__.load({
           last.audit ? h(Row, {
             label: '自检',
             value: last.audit.ok === false
-              ? `${last.audit.high || 0} 个高危 · ${(last.audit.findings || []).slice(0, 2).map((row) => row.rule).join('、')}`
-              : `通过 · ${(last.audit.scanned || []).length} 个文件`,
+              ? `${last.audit.high || 0} 个高危 · ${(last.audit.findings || []).slice(0, 3).map((row) => `${row.rule}@${row.file}:${row.line}`).join('、')}`
+              : `通过 · ${(last.audit.scanned || []).every((path) => path === 'payload') ? '载荷' : `${(last.audit.scanned || []).length} 个文件`}`,
             tone: last.audit.ok === false ? 'warn' : 'ok',
           }) : null,
           h(Row, {
