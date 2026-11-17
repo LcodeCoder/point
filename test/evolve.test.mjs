@@ -417,3 +417,26 @@ test("the design set never repeats a prompt to inflate n", () => {
   assert.equal(pool.length, 55);
   assert.deepEqual(designSet(1000), designSet(1000));
 });
+
+test("probe batches run a few at a time, in order", async () => {
+  let inFlight = 0;
+  let peak = 0;
+  const llm = {
+    stream: () => ({
+      async *[Symbol.asyncIterator]() {
+        inFlight += 1;
+        peak = Math.max(peak, inFlight);
+        await new Promise((resolve) => setTimeout(resolve, 5));
+        yield { type: "text-delta", text: "```js\nconst answer = 42; // a structured reply long enough to count\nconsole.log(answer);\n```" };
+        inFlight -= 1;
+      },
+    }),
+  };
+  const runner = createRunner({ getLlm: () => llm, getSelection: () => ({ provider: "p", model: "m" }), concurrency: 3 });
+  const targets = Array.from({ length: 9 }, (_, i) => ({ id: `t${i}`, text: "x" }));
+  const batch = await runner.runBatch({ level: "p0", targets });
+  assert.equal(batch.n, 9);
+  assert.equal(batch.ok, 9);
+  assert.equal(peak, 3, "three requests in flight, never nine");
+  assert.deepEqual(batch.rows.map((row) => row.id), targets.map((row) => row.id));
+});

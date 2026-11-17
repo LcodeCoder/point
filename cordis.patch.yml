@@ -58,6 +58,7 @@
           maxTokens: 0
           proposeMaxTokens: 0
           timeoutMs: 120000
+          probeConcurrency: 4
           retryLimit: 5
           retryDelayMs: 15000
           smallN: 0              # 0 = take the budget's default
