@@ -142,3 +142,9 @@
 - 端到端：67% → 58%
 - 自检：高危 8 处 · banned-phrase@payload:1、banned-phrase@payload:1、banned-phrase@payload:1
 - 原因：guard failed: tool, degrade (token 0.0%, tool -12.5pp, degrade 12.5%, sealed -8.3pp)
+
+## 2026-11-16 20:05 · 第 3 轮 · 提示词轮 · 回滚
+- 算子：M4 空变体
+- 端到端：0% → 0%
+- 自检：通过 · 载荷
+- 原因：the empty variant matched the baseline; no operator earned a keep
