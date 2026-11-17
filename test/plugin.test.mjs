@@ -1,6 +1,9 @@
 import { test } from "node:test";
 import { EventEmitter } from "node:events";
 import assert from "node:assert/strict";
+
+// dsh evaluates section text providers at assembly; resolve them the same way.
+const textOf = (section) => typeof section.text === "function" ? section.text({}) : section.text;
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -9,9 +12,9 @@ import { join } from "node:path";
 // inherit whatever the operator's own loop kept overnight.
 process.env.DSH_HOME = mkdtempSync(join(tmpdir(), "point-home-"));
 
-import plugin, { apply, renderHead, renderTail, buildState, clientSnapshot, createPresetProbe, DEFAULTS } from "../lib/index.js";
+import plugin, { apply, renderHead, renderTail, buildState, clientSnapshot, createPresetProbe, DEFAULTS, setActiveChain } from "../lib/index.js";
 import { MARKER } from "../lib/refusal.js";
-import sectionRow from "../lib/section.js";
+import sectionRow, { apply as sectionApply } from "../lib/section.js";
 import { TAGS } from "../lib/envelope.js";
 
 function fakeCtx() {
@@ -39,7 +42,7 @@ test("apply registers a head section with the configured order", () => {
   assert.equal(ctx.sections[0].name, "point");
   assert.equal(ctx.sections[0].order, DEFAULTS.order);
   assert.equal(ctx.sections[0].interpolate, false);
-  assert.ok(ctx.sections[0].text.includes("## Who You Are"));
+  assert.ok(textOf(ctx.sections[0]).includes("## Who You Are"));
 });
 
 test("position both registers head and tail in order", () => {
@@ -47,14 +50,14 @@ test("position both registers head and tail in order", () => {
   apply(ctx, { scope: "global", position: "both", tailMode: "anchor" });
   assert.deepEqual(ctx.sections.map((s) => s.name), ["point", "point:tail"]);
   assert.ok(ctx.sections[1].order > ctx.sections[0].order);
-  assert.ok(ctx.sections[1].text.length < 700);
+  assert.ok(textOf(ctx.sections[1]).length < 700);
 });
 
 test("tail mode full duplicates the payload", () => {
   const ctx = fakeCtx();
   apply(ctx, { scope: "global", position: "tail", tailMode: "full", mode: "minimal" });
   assert.equal(ctx.sections[0].name, "point:tail");
-  assert.equal(ctx.sections[0].text, renderHead({ mode: "minimal" }));
+  assert.equal(textOf(ctx.sections[0]), renderHead({ mode: "minimal" }));
 });
 
 test("disabled registers nothing", () => {
@@ -440,4 +443,35 @@ test("the envelope reserve is the real overhead, not a guess", () => {
   assert.ok(capped.length <= 300, `got ${capped.length}`);
   assert.ok(capped.startsWith("<|im_start|>system"), "the envelope stays closed");
   assert.ok(capped.trimEnd().endsWith("<|im_end|>"));
+});
+
+test("scope preset section text reflects a kept chain without remount", () => {
+  // The preset-scoped child registers a provider, not a snapshot: a kept round
+  // changes activeChain in the global half and the next assembly must see it.
+  const ctx = fakeCtx();
+  apply(ctx, { scope: "preset" });
+  assert.equal(ctx.sections.length, 0, "the global plugin stays passive in preset scope");
+  // The child entry is a separate module; check its registered shape directly.
+  const childCtx = fakeCtx();
+  sectionApply(childCtx, { scope: "preset" });
+  assert.equal(typeof childCtx.sections[0].text, "function");
+  const before = childCtx.sections[0].text({});
+  setActiveChain([{ axis: "A1", id: "c1" }]);
+  const after = childCtx.sections[0].text({});
+  setActiveChain([]);
+  assert.notEqual(after, before, "provider must re-render on the next assembly");
+});
+
+test("envelope stays closed even after a kept transform and a tight cap", () => {
+  setActiveChain([{ axis: "T3", id: "c1" }]);
+  try {
+    for (const cap of [100, 200, 2000]) {
+      const text = renderHead({ preset: "core", envelope: true, maxChars: cap });
+      assert.ok(text.startsWith("<|im_start|>"), `cap ${cap}: header first`);
+      assert.ok(text.trimEnd().endsWith("<|im_end|>"), `cap ${cap}: envelope closed`);
+      assert.ok(text.length <= cap, `cap ${cap}: within budget`);
+    }
+  } finally {
+    setActiveChain([]);
+  }
 });

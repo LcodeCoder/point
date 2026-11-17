@@ -2,6 +2,11 @@
 
 > point 每轮自动追加。可以手动删改；文件缺失时下一次写入会重新创建。
 
+## 2026-11-17 · 0.6.8 · 第三轮审计 20 条全修（手动条目）
+- 高危：preset 段的 section text 改为 provider（keep 后下一次装配即生效）；replay 移到 wrap 之前、信封开销统一预留（不再裁出半截 ChatML）；stop 信号贯穿 git add/commit/push 与沙盒测试。
+- 中危：body 超时用 resume 不用 destroy（408 可达且自检通过）；协议闸门只认 system 消息、nudge 落在同一条 system 且兼容无 type 的 text block；sectionBreakdown 用渲染器真实 body；exportedNames 支持 default/generator/star；沙盒只从 stdout 整行解析 # pass（stderr 伪造无效）；git-add-all 规则覆盖 --all 与 .；section 跟随 cfg.interpolate。
+- 低危：日志调用数按池上限计算、p4 带 tool_n、空文件补丁、layer:none 不重复 tick、research abort 不写缓存、面板 payload 错误带 status、hero 窄面板不截断、测试覆盖 7 个 state。
+
 ## 2026-11-17 · 0.6.7 · 每轮探针从 255 次降到 149 次（手动条目）
 - 归因只用 4 条提示（原 6 条），候选筛选 4 条（原 6 条）。
 - 全量评测只跑 p3；p4 只取前 8 条做工具守门；p2 不再测（不参与决策）。

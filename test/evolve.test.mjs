@@ -440,3 +440,21 @@ test("probe batches run a few at a time, in order", async () => {
   assert.equal(peak, 3, "three requests in flight, never nine");
   assert.deepEqual(batch.rows.map((row) => row.id), targets.map((row) => row.id));
 });
+
+test("publish forwards the stop signal to every git call", async () => {
+  const calls = [];
+  const ac = new AbortController();
+  ac.abort();
+  const publisher = createPublisher({
+    dir: mkdtempSync(join(tmpdir(), "point-sig-")),
+    repo: "https://example.invalid/repo.git",
+    branch: "main",
+    run: async (args, options) => {
+      calls.push(options?.signal);
+      return { ok: true, stdout: "", stderr: "" };
+    },
+  });
+  await publisher.publishRound({ round: 1, decision: "keep", track: "code", files: [{ path: "CHANGELOG.md" }] }, { signal: ac.signal });
+  assert.ok(calls.length > 0);
+  assert.ok(calls.every(Boolean), "every git call received the abort signal");
+});

@@ -84,7 +84,7 @@ window.__ModuleLoader__.load({
 .ptp-body > * { width: 100%; max-width: 940px; flex: none; }
 .ptp-body > .ptp-tabs { width: auto; align-self: flex-start; }
 .ptp-wrap { max-width: 940px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
-.ptp-hero { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+.ptp-hero { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
   border: 1px solid var(--dsw-alias-border-l1); border-radius: 14px; overflow: hidden;
   background: linear-gradient(135deg, var(--dsw-alias-bg-layer-2), var(--dsw-alias-bg-layer-1) 62%); }
 .ptp-hero > div { padding: 18px 20px; min-width: 0; }
@@ -264,7 +264,12 @@ window.__ModuleLoader__.load({
         error.status = res.status
         throw error
       }
-      if (!data || data.ok !== true) throw new Error('unexpected payload')
+      if (!data || data.ok !== true) {
+        const error = new Error('unexpected payload')
+        error.status = res.status
+        error.kind = 'payload'
+        throw error
+      }
       return normalizeState(data)
     }
 
@@ -914,8 +919,8 @@ window.__ModuleLoader__.load({
               h('div', { className: 'ptp-hero' },
                 h('div', null,
                   h('div', { className: 'ptp-hlabel' }, '模式'),
-                  h('div', { className: 'ptp-hvalue' }, modeLabel(data)),
-                  h('div', { className: 'ptp-hint' },
+                  h('div', { className: 'ptp-hvalue', title: modeLabel(data) }, modeLabel(data)),
+                  h('div', { className: 'ptp-hint', title: modeOf(data).scope === 'preset' ? `${modeOf(data).probe ? modeOf(data).probe.count : 0} 个模式可选 · 选中才生效` : '全局注入 · 所有会话' },
                     modeOf(data).scope === 'preset'
                       ? `${modeOf(data).probe ? modeOf(data).probe.count : 0} 个模式可选 · 选中才生效`
                       : '全局注入 · 所有会话')),

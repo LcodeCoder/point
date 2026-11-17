@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { auditPayload, auditSource, auditWorkspace, describeAudit } from "../lib/evolve/audit.js";
+import { exportedNames } from "../lib/evolve/proposer.js";
 import { createEvolve } from "../lib/evolve/engine.js";
 import { createStore } from "../lib/evolve/store.js";
 
@@ -131,4 +132,17 @@ test("the audit reads the whole tree and only narrows the report", async () => {
   const wide = auditWorkspace({ workspace: dir, files: ["lib/dirty.js"] });
   assert.equal(wide.ok, false);
   assert.equal(wide.findings[0].rule, "hardcoded-home");
+});
+
+test("exportedNames handles default, generators and star forwards", () => {
+  assert.deepEqual(exportedNames("export default function foo() {}"), ["default"]);
+  assert.deepEqual(exportedNames("export function* gen(){}; export async function* agen(){}"), ["gen", "agen"]);
+  assert.deepEqual(exportedNames('export * from "x"; export * as ns from "y"'), ["ns"]);
+});
+
+test("git-add-all audit catches --all and . as well as -A", () => {
+  for (const arg of ["-A", "--all", "."]) {
+    const found = auditSource("lib/evolve/publish.js", `await call(["add", "${arg}"]);`);
+    assert.ok(found.some((f) => f.rule === "git-add-all"), arg);
+  }
 });

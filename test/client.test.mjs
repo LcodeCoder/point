@@ -202,10 +202,10 @@ test("every tab renders against a real state payload", () => {
   const PointPanel = registrations.find((row) => row.spec.name === "main").component;
   const state = sampleState();
 
-  // Hook order in PointPanel: tab, view, nonce, toast.
+  // Hook order in PointPanel: tab, view, nonce, toast, busy, repoOpen, repoDraft.
   for (const tab of ["overview", "content", "results", "evolve", "rules"]) {
     const view = { kind: "ready", data: state };
-    const hooks = makeReact([tab, view, 0, ""]);
+    const hooks = makeReact([tab, view, 0, "", "", false, ""]);
     const tree = (() => {
       const source = readFileSync(join(ROOT, "client.js"), "utf8");
       let registration;
