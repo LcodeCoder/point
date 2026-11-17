@@ -110,3 +110,9 @@
 
 ## 2026-11-16 15:55 · 第 2 轮 · 代码轮 · 回滚
 - 原因：the answer was not JSON
+
+## 2026-11-16 17:24 · 第 3 轮 · 提示词轮 · 回滚
+- 算子：M1 空变体
+- 端到端：54% → 63%
+- 自检：通过 · 载荷
+- 原因：guard failed: tool, degrade (token 0.0%, tool -4.2pp, degrade 12.5%, sealed 4.2pp)
