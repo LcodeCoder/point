@@ -55,7 +55,8 @@
           provider: ""           # empty = the session's default model
           model: ""
           temperature: 0
-          maxTokens: 1200
+          maxTokens: 0
+          proposeMaxTokens: 0
           timeoutMs: 120000
           smallN: 0              # 0 = take the budget's default
           fullN: 0
