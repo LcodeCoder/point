@@ -215,6 +215,23 @@ point, deployment:persona-prefix, deployment:persona-suffix, point:tail
 
 命中高危时，`reason` 里直接写 `audit: <规则>@<文件>:<行>`，面板「上一轮 · 自检」也显示同样三条；台账里每条记录带完整的 `audit.findings`。
 
+### 失败会重试，日志有四份
+
+一轮失败（提案不是 JSON、沙盒测试不过、守门不过、Δ 落噪声）不会立刻跳到下一轮：同一个轮号会用**不同的样本和候选顺序**再试，最多 `retryLimit` 次（默认 3），每次间隔 `retryDelayMs`（默认 15 秒），直到 keep 或次数用完。重试不占轮次预算，记录写成 `rounds/round-N-attempt-M.json`。
+
+提案本身也是**破甲后的模型**：`proposer` 的 system 里带的是当前线上协议全文（`renderHead()` 的结果），不是一句空泛的「你是工程师」。所以它按同一套协议思考，改出来的东西也遵守同一套边界。
+
+日志分四层，按需看：
+
+| 文件 | 内容 |
+|---|---|
+| `~/.dsh/point/evolve/evolve.log` | 人读日志：每轮开始、每次尝试的结论、重试原因，一行一条 |
+| `~/.dsh/point/evolve/ledger.jsonl` | 机器台账：每轮完整 JSON（含 probes、audit、guard、publish） |
+| `~/.dsh/point/evolve/rounds/round-N.json` | 单轮详情，重试是 `round-N-attempt-M.json` |
+| 仓库根 `CHANGELOG.md` | 给人看的结论，每轮一条，随提交进 GitHub |
+
+面板「自进化」页签的「运行日志」卡片显示 `evolve.log` 最后 12 行。
+
 ### 更新日志
 
 仓库根目录的 `CHANGELOG.md` 由引擎每轮追加：时间、轮号、轨道、结论（保留/回滚/噪声）、算子或改动、自检结果、原因。它是普通文本，可以随手删改；删掉整份文件也没关系，下一轮写入会重新建好并补上表头。这个文件随本轮一起提交，所以 GitHub 上能看到每一轮的结论。

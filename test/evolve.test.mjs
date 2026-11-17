@@ -160,6 +160,50 @@ test("one round measures, keeps the winner, writes the ledger and publishes", as
   assert.equal(persisted.publish?.ok, true, "the publish result reaches the ledger, not just memory");
 });
 
+test("a failed attempt keeps the round number, and the retry does not replay it", async () => {
+  const dir = tmp();
+  const runner = {
+    available: () => true,
+    // Every probe fails: the round cannot measure anything and must revert.
+    async runBatch({ targets, protocol }) {
+      const n = targets.length;
+      return { n, ok: 0, rate: 0, chars: String(protocol ?? "").length };
+    },
+  };
+  const engine = createEvolve({
+    config: { enabled: true, rounds: 3, budget: "fast" },
+    store: createStore(dir),
+    runner,
+    renderProtocol: () => "protocol",
+    getBaseline: () => "baseline",
+    getIdentity: () => ({}),
+  });
+
+  const first = await engine.runRound();
+  assert.equal(first.decision, "revert");
+
+  // The loop is the piece that retries: it keeps the round number until the
+  // retry budget is spent, and only then advances.
+  const store = createStore(dir);
+  const looped = createEvolve({
+    config: { enabled: true, rounds: 2, budget: "fast", retryLimit: 1, retryDelayMs: 0, everyMinutes: 0 },
+    store,
+    runner,
+    renderProtocol: () => "protocol",
+    getBaseline: () => "baseline",
+    getIdentity: () => ({}),
+  });
+  await looped.start();
+  const deadline = Date.now() + 5000;
+  while (looped.status().running && Date.now() < deadline) await new Promise((resolve) => setTimeout(resolve, 20));
+  assert.ok(!looped.status().running, "the loop finishes instead of hanging");
+  const rows = store.ledger();
+  const attempts = rows.filter((row) => row.round === 2).map((row) => row.attempt ?? 1);
+  assert.deepEqual(attempts, [1, 2], "a failed round is retried before the loop moves on");
+  assert.ok(existsSync(join(dir, "rounds", "round-2-attempt-2.json")), "the retry keeps its own record");
+  assert.ok(store.log(40).some((line) => line.includes("retrying after")), "the log explains the retry");
+});
+
 test("a finished cycle rolls into a fresh one when continuous is on", () => {
   const store = createStore(tmp());
   store.commit([{ axis: "A2", id: "c1" }], { round: 2, sha: "x" });

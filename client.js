@@ -144,6 +144,21 @@ window.__ModuleLoader__.load({
   font-variant-numeric: tabular-nums; min-width: 22px; }
 .ptp-rule span { color: var(--dsw-alias-label-secondary); overflow: hidden;
   text-overflow: ellipsis; white-space: nowrap; }
+.ptp-log {
+  margin: 0;
+  padding: 10px 12px;
+  max-height: 220px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: var(--dsw-font-family-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 11px;
+  line-height: 1.55;
+  color: var(--dsw-alias-label-secondary);
+  background: var(--dsw-alias-bg-layer-2);
+  border-radius: var(--dsw-radius-md);
+}
+
 .ptp-actions { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0 4px; }
 .ptp-repo { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 10px; }
 .ptp-input { flex: 1 1 320px; min-width: 220px; padding: 7px 10px; border-radius: var(--dsw-radius-sm); border: 1px solid var(--dsw-alias-border-l2); background: var(--dsw-alias-bg-base); color: var(--dsw-alias-label-primary); font-family: var(--dsw-font-family); font-size: 12px; }
@@ -618,6 +633,9 @@ window.__ModuleLoader__.load({
               : (ev.git && ev.git.error) || '未初始化',
             tone: ev.git && ev.git.ok ? 'ok' : 'warn',
           })),
+        (ev.log || []).length ? h('div', { className: 'ptp-list' },
+          h(SectionTitle, { title: '运行日志', note: '最近 12 行' }),
+          h('pre', { className: 'ptp-log' }, (ev.log || []).join('\n'))) : null,
         last ? h('div', { className: 'ptp-list' },
           h(SectionTitle, { title: '上一轮' }),
           h(Row, {
