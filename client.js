@@ -49,15 +49,19 @@ window.__ModuleLoader__.load({
     const CSS = `
 .ptp { display: flex; flex-direction: column; height: 100%; min-height: 0;
   background: var(--dsw-alias-bg-base); color: var(--dsw-alias-label-primary);
-  font-family: var(--dsw-font-family); }
-.ptp-head { display: flex; align-items: center; gap: 10px; padding: 14px 22px 12px;
-  border-bottom: 1px solid var(--dsw-alias-border-l2); }
-.ptp-title { font-size: 15px; font-weight: 600; letter-spacing: .01em; }
-.ptp-sub { font-size: 12px; color: var(--dsw-alias-label-tertiary); }
+  font-family: var(--dsw-font-family); -webkit-font-smoothing: antialiased; }
+.ptp-head { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 12px;
+  padding: 18px 32px 14px;
+  background: linear-gradient(var(--dsw-alias-bg-base) 78%, transparent); }
+.ptp-mark { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center;
+  color: var(--dsw-alias-state-business-primary); border: 1px solid var(--dsw-alias-border-l2);
+  background: var(--dsw-alias-bg-layer-1); }
+.ptp-title { font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
+.ptp-sub { font-size: 11.5px; color: var(--dsw-alias-label-tertiary); margin-top: 2px; }
 .ptp-spacer { flex: 1; }
-.ptp-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 11px;
-  padding: 3px 9px; border-radius: 999px; border: 1px solid var(--dsw-alias-border-l2);
-  color: var(--dsw-alias-label-secondary); white-space: nowrap; }
+.ptp-pill { display: inline-flex; align-items: center; gap: 7px; font-size: 11.5px; font-weight: 500;
+  padding: 5px 11px; border-radius: 999px; border: 1px solid var(--dsw-alias-border-l2);
+  background: var(--dsw-alias-bg-layer-1); color: var(--dsw-alias-label-secondary); white-space: nowrap; }
 .ptp-pill[data-tone="ok"] { border-color: var(--dsw-alias-state-success-primary);
   color: var(--dsw-alias-state-success-primary); }
 .ptp-pill[data-tone="warn"] { border-color: var(--dsw-alias-state-warn-primary);
@@ -65,107 +69,138 @@ window.__ModuleLoader__.load({
 .ptp-pill[data-tone="bad"] { border-color: var(--dsw-alias-state-error-primary);
   color: var(--dsw-alias-state-error-primary); }
 .ptp-dot { width: 6px; height: 6px; border-radius: 999px; background: currentColor; }
-.ptp-btn { appearance: none; border: 1px solid var(--dsw-alias-border-l2); background: none;
-  color: var(--dsw-alias-label-secondary); font: inherit; font-size: 12px; cursor: pointer;
-  padding: 4px 10px; border-radius: var(--dsw-radius-sm); }
+.ptp-btn { appearance: none; border: 1px solid var(--dsw-alias-border-l2);
+  background: var(--dsw-alias-bg-layer-1); color: var(--dsw-alias-label-secondary);
+  font: inherit; font-size: 12px; font-weight: 500; cursor: pointer; padding: 6px 12px;
+  border-radius: 8px; }
 .ptp-btn:hover { background: var(--dsw-alias-interactive-bg-hover);
-  color: var(--dsw-alias-label-primary); }
-.ptp-body { flex: 1; min-height: 0; overflow: auto; padding: 16px 22px 48px;
-  display: flex; flex-direction: column; gap: 16px; }
-.ptp-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
-.ptp-card { border: 1px solid var(--dsw-alias-border-l2); border-radius: var(--dsw-radius-md);
-  padding: 10px 13px; background: var(--dsw-alias-bg-layer-1); min-width: 0; }
-.ptp-k { font-size: 11px; color: var(--dsw-alias-label-tertiary); letter-spacing: .02em; }
-.ptp-v { font-size: 19px; font-weight: 600; font-variant-numeric: tabular-nums;
-  margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ptp-v small { font-size: 11px; font-weight: 400; color: var(--dsw-alias-label-caption);
-  margin-left: 4px; }
-.ptp-tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--dsw-alias-border-l2); }
-.ptp-tab { appearance: none; background: none; border: 0; border-bottom: 2px solid transparent;
-  padding: 6px 12px; margin-bottom: -1px; font: inherit; font-size: 13px; cursor: pointer;
-  color: var(--dsw-alias-label-secondary); }
+  color: var(--dsw-alias-label-primary); border-color: var(--dsw-alias-border-l3); }
+.ptp-btn:focus-visible { outline: 2px solid var(--dsw-alias-state-business-primary); outline-offset: 2px; }
+.ptp-btn[disabled] { opacity: .5; cursor: default; }
+.ptp-primary { background: var(--dsw-alias-state-business-primary); border-color: transparent; color: #fff; }
+.ptp-primary:hover { background: var(--dsw-alias-state-business-primary); color: #fff; filter: brightness(1.08); }
+.ptp-body { flex: 1; min-height: 0; overflow: auto; padding: 8px 32px 64px;
+  display: flex; flex-direction: column; align-items: center; gap: 28px; }
+.ptp-body > * { width: 100%; max-width: 940px; flex: none; }
+.ptp-body > .ptp-tabs { width: auto; align-self: flex-start; }
+.ptp-wrap { max-width: 940px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+.ptp-hero { display: grid; grid-template-columns: 1.4fr 1fr 1fr;
+  border: 1px solid var(--dsw-alias-border-l1); border-radius: 14px; overflow: hidden;
+  background: linear-gradient(135deg, var(--dsw-alias-bg-layer-2), var(--dsw-alias-bg-layer-1) 62%); }
+.ptp-hero > div { padding: 18px 20px; min-width: 0; }
+.ptp-hero > div + div { border-left: 1px solid var(--dsw-alias-border-l1); }
+.ptp-hlabel { font-size: 11px; letter-spacing: .06em; color: var(--dsw-alias-label-tertiary);
+  text-transform: uppercase; }
+.ptp-hvalue { font-size: 22px; font-weight: 600; margin-top: 6px; letter-spacing: -.01em;
+  font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ptp-hvalue small { font-size: 12px; font-weight: 400; color: var(--dsw-alias-label-tertiary);
+  margin-left: 6px; }
+.ptp-hint { font-size: 11.5px; color: var(--dsw-alias-label-caption); margin-top: 4px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ptp-tabs { display: inline-flex; align-self: flex-start; gap: 2px; padding: 3px;
+  border-radius: 10px; background: var(--dsw-alias-bg-layer-1); border: 1px solid var(--dsw-alias-border-l1); }
+.ptp-tab { appearance: none; background: none; border: 0; padding: 6px 14px; border-radius: 7px;
+  font: inherit; font-size: 12.5px; font-weight: 500; color: var(--dsw-alias-label-tertiary); cursor: pointer; }
 .ptp-tab:hover { color: var(--dsw-alias-label-primary); }
-.ptp-tab[data-active="true"] { color: var(--dsw-alias-label-primary);
-  border-bottom-color: var(--dsw-alias-state-business-primary); }
-.ptp-sect { display: flex; flex-direction: column; gap: 8px; }
-.ptp-h { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600;
-  color: var(--dsw-alias-label-secondary); letter-spacing: .02em; }
-.ptp-h span { font-weight: 400; color: var(--dsw-alias-label-caption); }
-.ptp-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 0 22px; }
-.ptp-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
-  font-size: 12px; padding: 6px 0; border-bottom: 1px dashed var(--dsw-alias-border-l1); }
-.ptp-row b { font-weight: 400; color: var(--dsw-alias-label-tertiary); }
-.ptp-row i { font-style: normal; color: var(--dsw-alias-label-primary); text-align: right;
-  font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; }
+.ptp-tab[data-active="true"] { background: var(--dsw-alias-bg-layer-3);
+  color: var(--dsw-alias-label-primary); }
+.ptp-sect { display: flex; flex-direction: column; gap: 12px; }
+.ptp-h { display: flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 600;
+  letter-spacing: .02em; color: var(--dsw-alias-label-tertiary); }
+.ptp-h:after { content: ""; flex: 1; height: 1px; background: var(--dsw-alias-border-l1); }
+.ptp-h span { font-weight: 400; letter-spacing: 0; color: var(--dsw-alias-label-caption); }
+.ptp-h .ptp-hright { margin-left: auto; }
+.ptp-h .ptp-hright .ptp-btn { padding: 3px 9px; font-size: 11.5px; }
+.ptp-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+.ptp-card { border: 1px solid var(--dsw-alias-border-l1); border-radius: 12px;
+  padding: 14px 16px; background: var(--dsw-alias-bg-layer-1); min-width: 0; }
+.ptp-k { font-size: 11px; color: var(--dsw-alias-label-tertiary); letter-spacing: .02em; }
+.ptp-v { font-size: 22px; font-weight: 600; letter-spacing: -.02em; font-variant-numeric: tabular-nums;
+  margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ptp-v small { font-size: 11.5px; font-weight: 400; color: var(--dsw-alias-label-caption); margin-left: 5px; }
+.ptp-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 0 32px;
+  border: 1px solid var(--dsw-alias-border-l1); border-radius: 12px; padding: 4px 18px;
+  background: var(--dsw-alias-bg-layer-1); }
+.ptp-row { display: flex; align-items: baseline; justify-content: space-between; gap: 16px;
+  font-size: 12.5px; padding: 9px 0; border-bottom: 1px solid var(--dsw-alias-border-l1); }
+.ptp-row:last-child { border-bottom: 0; }
+.ptp-row b { font-weight: 400; color: var(--dsw-alias-label-tertiary); white-space: nowrap; }
+.ptp-row i { font-style: normal; color: var(--dsw-alias-label-secondary); text-align: right;
+  font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ptp-row[data-tone="ok"] i { color: var(--dsw-alias-state-success-primary); }
 .ptp-row[data-tone="warn"] i { color: var(--dsw-alias-state-warn-primary); }
-.ptp-pre { margin: 0; padding: 12px 14px; border-radius: var(--dsw-radius-md);
-  border: 1px solid var(--dsw-alias-border-l2); background: var(--dsw-alias-markdown-code-block);
-  color: var(--dsw-alias-label-secondary); font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 11.5px; line-height: 1.55; white-space: pre-wrap; word-break: break-word;
-  max-height: 360px; overflow: auto; }
+.ptp-row[data-tone="bad"] i { color: var(--dsw-alias-state-error-primary); }
+.ptp-pre { margin: 0; padding: 14px 16px; border-radius: 12px;
+  border: 1px solid var(--dsw-alias-border-l1); background: var(--dsw-alias-markdown-code-block);
+  color: var(--dsw-alias-label-secondary); font-family: var(--dsw-font-family-mono, ui-monospace, Menlo, monospace);
+  font-size: 11.5px; line-height: 1.65; white-space: pre-wrap; word-break: break-word;
+  max-height: 420px; overflow: auto; }
 .ptp-pre[data-empty="true"] { color: var(--dsw-alias-label-caption); font-style: italic; }
-.ptp-bar { height: 6px; border-radius: 999px; background: var(--dsw-alias-border-l1); overflow: hidden; }
-.ptp-bar > i { display: block; height: 100%; border-radius: 999px;
-  background: var(--dsw-alias-state-business-primary); }
-.ptp-mode { display: grid; grid-template-columns: 52px 1fr 92px; align-items: center; gap: 10px;
-  font-size: 12px; padding: 4px 0; }
+.ptp-bar { height: 5px; border-radius: 999px; background: var(--dsw-alias-border-l1); overflow: hidden; }
+.ptp-bar > i { display: block; height: 100%; border-radius: 999px; background: var(--dsw-alias-state-business-primary); }
+.ptp-mode { display: grid; grid-template-columns: 56px 1fr 96px; align-items: center; gap: 12px;
+  font-size: 12.5px; padding: 5px 0; }
 .ptp-mode[data-active="true"] { color: var(--dsw-alias-label-primary); }
 .ptp-mode[data-active="false"] { color: var(--dsw-alias-label-tertiary); }
-.ptp-num { text-align: right; font-variant-numeric: tabular-nums;
-  color: var(--dsw-alias-label-secondary); }
+.ptp-num { text-align: right; font-variant-numeric: tabular-nums; color: var(--dsw-alias-label-secondary); }
 .ptp-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.ptp-chip { display: inline-flex; align-items: baseline; gap: 5px; font-size: 11px;
-  padding: 3px 8px; border-radius: 999px; border: 1px solid var(--dsw-alias-border-l2);
-  color: var(--dsw-alias-label-secondary); }
-.ptp-chip em { font-style: normal; color: var(--dsw-alias-label-caption);
-  font-variant-numeric: tabular-nums; }
+.ptp-chip { display: inline-flex; align-items: baseline; gap: 5px; font-size: 11px; padding: 3px 9px;
+  border-radius: 999px; border: 1px solid var(--dsw-alias-border-l2); color: var(--dsw-alias-label-secondary); }
+.ptp-chip em { font-style: normal; color: var(--dsw-alias-label-caption); font-variant-numeric: tabular-nums; }
 .ptp-chip[data-tier="0"] { border-color: var(--dsw-alias-state-business-primary); }
 .ptp-chip[data-dropped="true"] { opacity: .45; text-decoration: line-through; }
-.ptp-table { display: flex; flex-direction: column; font-size: 12px; }
-.ptp-thead, .ptp-tr { display: grid; grid-template-columns: 76px 62px 74px 74px 54px 1fr;
-  gap: 10px; padding: 6px 8px; align-items: baseline; }
+.ptp-table { display: flex; flex-direction: column; font-size: 12px; border: 1px solid var(--dsw-alias-border-l1);
+  border-radius: 12px; overflow: hidden; background: var(--dsw-alias-bg-layer-1); }
+.ptp-thead, .ptp-tr { display: grid; grid-template-columns: 76px 62px 74px 74px 54px 1fr; gap: 10px;
+  padding: 9px 14px; align-items: baseline; }
 .ptp-thead { color: var(--dsw-alias-label-caption); font-size: 11px;
-  border-bottom: 1px solid var(--dsw-alias-border-l2); }
-.ptp-tr { border-bottom: 1px dashed var(--dsw-alias-border-l1);
-  font-variant-numeric: tabular-nums; }
+  border-bottom: 1px solid var(--dsw-alias-border-l1); background: var(--dsw-alias-bg-layer-2); }
+.ptp-tr { border-bottom: 1px solid var(--dsw-alias-border-l1); font-variant-numeric: tabular-nums; }
+.ptp-tr:last-child { border-bottom: 0; }
 .ptp-tr:hover { background: var(--dsw-alias-interactive-bg-hover); }
-.ptp-mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px; }
-.ptp-empty { border: 1px dashed var(--dsw-alias-border-l2); border-radius: var(--dsw-radius-md);
-  padding: 22px; text-align: center; color: var(--dsw-alias-label-tertiary); font-size: 12px;
-  line-height: 1.7; }
-.ptp-empty b { display: block; color: var(--dsw-alias-label-secondary); font-weight: 500;
-  margin-bottom: 4px; }
-.ptp-rules { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 4px 20px; }
-.ptp-rule { display: flex; gap: 8px; font-size: 12px; padding: 4px 0;
-  border-bottom: 1px dashed var(--dsw-alias-border-l1); }
-.ptp-rule[data-active="false"] { opacity: .38; }
+.ptp-mono { font-family: var(--dsw-font-family-mono, ui-monospace, Menlo, monospace); font-size: 11.5px; }
+.ptp-empty { border: 1px dashed var(--dsw-alias-border-l2); border-radius: 12px; padding: 28px 22px;
+  text-align: center; color: var(--dsw-alias-label-tertiary); font-size: 12.5px; line-height: 1.8; }
+.ptp-empty b { display: block; color: var(--dsw-alias-label-secondary); font-weight: 500; margin-bottom: 6px; font-size: 13px; }
+.ptp-rules { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 0 24px; }
+.ptp-rule { display: flex; gap: 10px; font-size: 12.5px; padding: 7px 0;
+  border-bottom: 1px solid var(--dsw-alias-border-l1); }
+.ptp-rule[data-active="false"] { opacity: .4; }
 .ptp-rule em { font-style: normal; color: var(--dsw-alias-label-caption);
-  font-variant-numeric: tabular-nums; min-width: 22px; }
-.ptp-rule span { color: var(--dsw-alias-label-secondary); overflow: hidden;
+  font-variant-numeric: tabular-nums; min-width: 24px; }
+.ptp-rule span { color: var(--dsw-alias-label-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ptp-log { border: 1px solid var(--dsw-alias-border-l1); border-radius: 12px; overflow: hidden;
+  background: var(--dsw-alias-markdown-code-block); }
+.ptp-logbar { display: flex; align-items: center; gap: 8px; padding: 8px 14px;
+  border-bottom: 1px solid var(--dsw-alias-border-l1); font-size: 11px; color: var(--dsw-alias-label-caption); }
+.ptp-log pre { margin: 0; padding: 12px 16px; max-height: 240px; overflow: auto; white-space: pre-wrap;
+  word-break: break-word; font-family: var(--dsw-font-family-mono, ui-monospace, Menlo, monospace);
+  font-size: 11px; line-height: 1.7; color: var(--dsw-alias-label-secondary); }
+.ptp-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.ptp-repo { display: flex; gap: 8px; flex-wrap: wrap; }
+.ptp-input { flex: 1 1 320px; min-width: 220px; padding: 7px 11px; border-radius: 8px;
+  border: 1px solid var(--dsw-alias-border-l2); background: var(--dsw-alias-bg-base);
+  color: var(--dsw-alias-label-primary); font-family: var(--dsw-font-family); font-size: 12px; }
+.ptp-input:focus-visible { outline: 2px solid var(--dsw-alias-state-business-primary); outline-offset: 1px; }
+.ptp-banner { display: flex; align-items: center; gap: 10px; padding: 11px 16px; border-radius: 10px;
+  font-size: 12.5px; color: var(--dsw-alias-label-secondary);
+  border: 1px solid var(--dsw-alias-border-l2); background: var(--dsw-alias-bg-layer-1); }
+.ptp-banner .ptp-dot { color: var(--dsw-alias-state-business-primary); }
+.ptp-badge { display: inline-flex; align-items: center; font-size: 11px; font-weight: 500;
+  padding: 2px 8px; border-radius: 999px; border: 1px solid var(--dsw-alias-border-l2);
+  color: var(--dsw-alias-label-secondary); white-space: nowrap; }
+.ptp-badge[data-tone="ok"] { color: var(--dsw-alias-state-success-primary);
+  border-color: var(--dsw-alias-state-success-primary); }
+.ptp-badge[data-tone="warn"] { color: var(--dsw-alias-state-warn-primary);
+  border-color: var(--dsw-alias-state-warn-primary); }
+.ptp-hist { display: flex; align-items: center; gap: 12px; padding: 10px 2px;
+  border-bottom: 1px solid var(--dsw-alias-border-l1); font-size: 12.5px; }
+.ptp-hist:last-child { border-bottom: 0; }
+.ptp-hist .ptp-id { font-family: var(--dsw-font-family-mono, ui-monospace, Menlo, monospace);
+  font-size: 11.5px; color: var(--dsw-alias-label-caption); min-width: 34px; }
+.ptp-hist .ptp-what { flex: 1; color: var(--dsw-alias-label-secondary); overflow: hidden;
   text-overflow: ellipsis; white-space: nowrap; }
-.ptp-log {
-  margin: 0;
-  padding: 10px 12px;
-  max-height: 220px;
-  overflow: auto;
-  white-space: pre-wrap;
-  word-break: break-word;
-  font-family: var(--dsw-font-family-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
-  font-size: 11px;
-  line-height: 1.55;
-  color: var(--dsw-alias-label-secondary);
-  background: var(--dsw-alias-bg-layer-2);
-  border-radius: var(--dsw-radius-md);
-}
-
-.ptp-actions { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0 4px; }
-.ptp-repo { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 10px; }
-.ptp-input { flex: 1 1 320px; min-width: 220px; padding: 7px 10px; border-radius: var(--dsw-radius-sm); border: 1px solid var(--dsw-alias-border-l2); background: var(--dsw-alias-bg-base); color: var(--dsw-alias-label-primary); font-family: var(--dsw-font-family); font-size: 12px; }
-.ptp-primary { border-color: transparent; background: var(--dsw-alias-state-business-primary); color: #fff; }
-.ptp-primary:hover { filter: brightness(1.06); }
-.ptp-btn[disabled] { opacity: 0.55; cursor: default; }
-.ptp-note { font-size: 11.5px; color: var(--dsw-alias-label-caption); line-height: 1.6; }
+.ptp-note { font-size: 12px; line-height: 1.75; color: var(--dsw-alias-label-caption); }
 .ptp-toast { font-size: 11.5px; color: var(--dsw-alias-state-success-primary); }
 `
 
@@ -256,8 +291,9 @@ window.__ModuleLoader__.load({
         h('i', null, value))
     }
 
-    function SectionTitle({ title, note }) {
-      return h('div', { className: 'ptp-h' }, title, note ? h('span', null, note) : null)
+    function SectionTitle({ title, note, right }) {
+      return h('div', { className: 'ptp-h' }, title, note ? h('span', null, note) : null,
+        right ? h('span', { className: 'ptp-hright' }, right) : null)
     }
 
     function Overview({ data }) {
@@ -389,22 +425,22 @@ window.__ModuleLoader__.load({
       return h(React.Fragment, null,
         h('div', { className: 'ptp-sect' },
           h(SectionTitle, {
-            title: `头段 point`,
+            title: '头段 point',
             note: `${fmt(data.head.chars)} 字符 · ${fmt(data.head.lines)} 行 · order ${data.config.order}`,
+            right: h('button', {
+              className: 'ptp-btn', type: 'button', onClick: () => onCopy(data.head.text),
+            }, '复制'),
           }),
-          h('div', null, h('button', {
-            className: 'ptp-btn', type: 'button', onClick: () => onCopy(data.head.text),
-          }, '复制头段')),
           h('pre', { className: 'ptp-pre', 'data-empty': String(headEmpty) },
             headEmpty ? '未注入：position 不含 head。' : data.head.text)),
         h('div', { className: 'ptp-sect' },
           h(SectionTitle, {
             title: '尾锚 point:tail',
             note: `${fmt(data.tail.chars)} 字符 · order ${data.config.tailOrder}`,
+            right: h('button', {
+              className: 'ptp-btn', type: 'button', onClick: () => onCopy(data.tail.text),
+            }, '复制'),
           }),
-          h('div', null, h('button', {
-            className: 'ptp-btn', type: 'button', onClick: () => onCopy(data.tail.text),
-          }, '复制尾锚')),
           h('pre', { className: 'ptp-pre', 'data-empty': String(tailEmpty) },
             tailEmpty ? '未注入：position 不含 tail。' : data.tail.text)),
         data.sections.length
@@ -523,18 +559,15 @@ window.__ModuleLoader__.load({
       const last = ev.last || null
       const pctOf = (x) => `${Math.round(Number(x || 0) * 100)}%`
       return h(React.Fragment, null,
+        ev.running ? h('div', { className: 'ptp-banner' },
+          h('i', { className: 'ptp-dot' }),
+          `正在跑第 ${ev.round + 1} 轮 · 阶段 ${phaseLabel(ev.phase)} · 一轮要几十到几百次模型调用，跑完会出现在台账里`) : null,
         h('div', { className: 'ptp-cards' },
           h(Card, { label: '开关', value: ev.armed ? '已开启' : '已关闭' }),
           h(Card, { label: '轮次', value: `${ev.round}`, unit: `/ ${ev.maxRounds}` }),
           h(Card, { label: '阶段', value: phaseLabel(ev.phase) }),
           h(Card, { label: '轨道', value: trackLabel(ev.tracks) }),
           h(Card, { label: '保留', value: `${ev.kept}`, unit: `/ ${ev.ledger} 轮` })),
-        h('div', { className: 'ptp-note' },
-          ev.phase === 'done'
-            ? `本轮预算（${ev.maxRounds} 轮）已用完，链保留；点「开启」开始新一轮，台账会归档。`
-            : '提示词轮：定层 → 金丝雀 → 选算子 → 8 个候选 → 小样本 → 全量 → 密封。代码轮：GitHub 检索 → 写完整文件 → 沙盒副本跑全套测试 → 通过才落地。跑完一轮按节奏等下一轮，同时要等你静默。'),
-        ev.running ? h('div', { className: 'ptp-note' },
-          `正在跑第 ${ev.round + 1} 轮 · 阶段 ${phaseLabel(ev.phase)}。一轮要几十次到几百次模型调用，面板每 4 秒刷新，跑完会出现在台账里。`) : null,
         h('div', { className: 'ptp-actions' },
           h('button', {
             className: 'ptp-btn ptp-primary', type: 'button', disabled: !!busy,
@@ -563,6 +596,10 @@ window.__ModuleLoader__.load({
               setRepoOpen(!repoOpen)
             },
           }, repoOpen ? '收起仓库设置' : 'GitHub 仓库')),
+        h('div', { className: 'ptp-note' },
+          ev.phase === 'done'
+            ? `本轮预算（${ev.maxRounds} 轮）已用完，链保留；点「开启」开始新一轮，台账会归档。`
+            : '提示词轮：定层 → 金丝雀 → 选算子 → 8 个候选 → 小样本 → 全量 → 密封。代码轮：GitHub 检索 → 写完整文件 → 沙盒副本跑全套测试 → 通过才落地。跑完一轮按节奏等下一轮，同时要等你静默。'),
         repoOpen
           ? h('div', { className: 'ptp-repo' },
             h('input', {
@@ -587,7 +624,9 @@ window.__ModuleLoader__.load({
               },
             }, '清除'))
           : null,
-        h('div', { className: 'ptp-list' },
+        h('div', { className: 'ptp-sect' },
+          h(SectionTitle, { title: '运行配置' }),
+          h('div', { className: 'ptp-grid' },
           h(Row, {
             label: '配置默认',
             value: ev.configured ? '开' : '关（会话内可开）',
@@ -600,8 +639,9 @@ window.__ModuleLoader__.load({
               : '不限间隔',
           }),
           h(Row, {
-            label: '轨道',
-            value: `${trackLabel(ev.tracks)}${ev.research === false ? ' · 不检索' : ' · 代码轮先检索 GitHub'}`,
+            label: 'GitHub 检索',
+            value: ev.research === false ? '关' : '开 · 代码轮先搜参考项目',
+            tone: ev.research === false ? 'warn' : 'ok',
           }),
           h(Row, {
             label: '空闲才跑',
@@ -632,12 +672,15 @@ window.__ModuleLoader__.load({
               ? `${ev.git.branch || 'main'} @ ${ev.git.commit || '—'}${ev.git.dirty ? ` · ${ev.git.dirty} 未提交` : ''}`
               : (ev.git && ev.git.error) || '未初始化',
             tone: ev.git && ev.git.ok ? 'ok' : 'warn',
-          })),
-        (ev.log || []).length ? h('div', { className: 'ptp-list' },
+          }))),
+        (ev.log || []).length ? h('div', { className: 'ptp-sect' },
           h(SectionTitle, { title: '运行日志', note: '最近 12 行' }),
-          h('pre', { className: 'ptp-log' }, (ev.log || []).join('\n'))) : null,
-        last ? h('div', { className: 'ptp-list' },
+          h('div', { className: 'ptp-log' },
+            h('div', { className: 'ptp-logbar' }, `evolve.log · ${ev.dir || '—'}`),
+            h('pre', null, (ev.log || []).join('\n')))) : null,
+        last ? h('div', { className: 'ptp-sect' },
           h(SectionTitle, { title: '上一轮' }),
+          h('div', { className: 'ptp-grid' },
           h(Row, {
             label: `第 ${last.round} 轮 · ${last.track === 'code' ? '代码' : '提示词'}`,
             value: `${last.decision || '—'}${last.reason ? ` · ${last.reason}` : ''}`,
@@ -661,16 +704,20 @@ window.__ModuleLoader__.load({
           h(Row, {
             label: '端到端',
             value: last.e2e ? `${pctOf(last.e2e.before)} → ${pctOf(last.e2e.after)}` : '—',
-          })) : null,
-        (ev.history || []).length ? h('div', { className: 'ptp-list' },
+          }))) : null,
+        (ev.history || []).length ? h('div', { className: 'ptp-sect' },
           h(SectionTitle, { title: '台账', note: `${ev.history.length} 轮` }),
-          ev.history.map((row) => h(Row, {
-            key: `h${row.round}`,
-            label: `#${row.round} ${row.track === 'code' ? '代码' : (row.axis || '提示词')}`,
-            value: row.track === 'code'
-              ? `${row.decision || '—'}${row.title ? ` · ${row.title}` : ''}${row.tests ? ` · ${row.tests.pass || 0} 测试` : ''}`
-              : `${row.decision || '—'}${row.eval && row.eval.e2e ? ` · ${pctOf(row.eval.e2e.after)}` : ''}`,
-            tone: row.decision === 'keep' ? 'ok' : row.decision === 'revert' ? 'warn' : null,
+          h('div', null, ev.history.map((row) => {
+            const tone = row.decision === 'keep' ? 'ok' : row.decision === 'revert' ? 'warn' : null
+            const what = row.track === 'code'
+              ? [row.title, row.tests ? `${row.tests.pass || 0} 测试` : null].filter(Boolean).join(' · ')
+              : [row.axis || '提示词', row.reason || (row.eval && row.eval.e2e ? `${pctOf(row.eval.e2e.after)}` : null)]
+                .filter(Boolean).join(' · ')
+            return h('div', { key: `h${row.round}`, className: 'ptp-hist' },
+              h('span', { className: 'ptp-id' }, `#${row.round}`),
+              h('span', { className: 'ptp-badge', 'data-tone': tone }, row.decision || '—'),
+              h('span', { className: 'ptp-what' }, what || '—'),
+              h('span', { className: 'ptp-id' }, clock(row.at)))
           }))) : null)
     }
 
@@ -746,7 +793,7 @@ window.__ModuleLoader__.load({
       return h('section', { className: 'ptp', 'aria-label': 'point 破甲协议' },
         h('style', null, CSS),
         h('div', { className: 'ptp-head' },
-          h(PointIcon, { size: 18 }),
+          h('div', { className: 'ptp-mark' }, h(PointIcon, { size: 18 })),
           h('div', null,
             h('div', { className: 'ptp-title' }, 'point · 破甲协议'),
             h('div', { className: 'ptp-sub' }, '系统提示注入 · 内容与成果')),
@@ -773,19 +820,24 @@ window.__ModuleLoader__.load({
           data
             ? h(React.Fragment, null,
               view.stale ? h('div', { className: 'ptp-note' }, `最近一次刷新失败：${view.stale}`) : null,
-              h('div', { className: 'ptp-cards' },
-                h(Card, { label: '头段 point', value: fmt(data.head.chars), unit: '字符' }),
-                h(Card, {
-                  label: '尾锚 point:tail',
-                  value: data.tail.chars ? fmt(data.tail.chars) : '未启用',
-                  unit: data.tail.chars ? '字符' : '',
-                }),
-                h(Card, { label: '生效规则', value: `${data.rules.active}`, unit: `/ ${data.rules.total}` }),
-                h(Card, {
-                  label: '装配观测',
-                  value: fmt(data.evidence.count),
-                  unit: `${data.evidence.scopes} 作用域`,
-                })),
+              h('div', { className: 'ptp-hero' },
+                h('div', null,
+                  h('div', { className: 'ptp-hlabel' }, '模式'),
+                  h('div', { className: 'ptp-hvalue' }, modeLabel(data)),
+                  h('div', { className: 'ptp-hint' },
+                    modeOf(data).scope === 'preset'
+                      ? `${modeOf(data).probe ? modeOf(data).probe.count : 0} 个模式可选 · 选中才生效`
+                      : '全局注入 · 所有会话')),
+                h('div', null,
+                  h('div', { className: 'ptp-hlabel' }, '注入头段'),
+                  h('div', { className: 'ptp-hvalue' }, fmt(data.head.chars), h('small', null, '字符')),
+                  h('div', { className: 'ptp-hint' },
+                    `${data.sections.filter((s) => !s.dropped).length} 段 · ${data.rules.active} 条规则`)),
+                h('div', null,
+                  h('div', { className: 'ptp-hlabel' }, '装配观测'),
+                  h('div', { className: 'ptp-hvalue' }, fmt(data.evidence.count), h('small', null, '次')),
+                  h('div', { className: 'ptp-hint' },
+                    data.evidence.last ? `最近 ${clock(data.evidence.last)}` : '等待下一次装配'))),
               h('div', { className: 'ptp-tabs' }, TABS.map(([id, label]) => h('button', {
                 key: id, type: 'button', className: 'ptp-tab', 'data-active': String(tab === id),
                 onClick: () => setTab(id),
