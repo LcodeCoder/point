@@ -1,6 +1,13 @@
 import { test } from "node:test";
 import { EventEmitter } from "node:events";
 import assert from "node:assert/strict";
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
+// apply() loads the persisted transform chain from DSH_HOME. A test must not
+// inherit whatever the operator's own loop kept overnight.
+process.env.DSH_HOME = mkdtempSync(join(tmpdir(), "point-home-"));
 
 import plugin, { apply, renderHead, renderTail, buildState, clientSnapshot, createPresetProbe, DEFAULTS } from "../lib/index.js";
 import { MARKER } from "../lib/refusal.js";

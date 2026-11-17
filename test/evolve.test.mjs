@@ -155,6 +155,8 @@ test("one round measures, keeps the winner, writes the ledger and publishes", as
   assert.ok(existsSync(join(dir, "patches", "round-1.patch")));
   assert.equal(createStore(dir).active().chain.length, 1);
   assert.deepEqual(committed, [1], "a kept round mirrors its chain for the repository");
+  const persisted = createStore(dir).ledger().at(-1);
+  assert.equal(persisted.publish?.ok, true, "the publish result reaches the ledger, not just memory");
 });
 
 test("a finished cycle rolls into a fresh one when continuous is on", () => {

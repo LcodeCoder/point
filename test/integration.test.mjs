@@ -5,9 +5,13 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
+
+// Keep the test off the operator's live chain in $DSH_HOME.
+process.env.DSH_HOME = mkdtempSync(join(tmpdir(), "point-home-"));
 
 const APP = process.env.DSH_APP_ROOT ?? "/Volumes/new/DeepSeek Harness.app/Contents/Resources/app/dsh";
 const CORDIS = join(APP, "node_modules/@deepseek-ai/cordis/lib/index.js");
